@@ -1,0 +1,150 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Student {
+  id          String   @id @default(cuid())
+  name        String
+  displayName String
+  avatarUrl   String?
+  bio         String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  contestResults StudentContestResult[]
+  knowledges     StudentKnowledge[]
+  tasks          Task[]
+
+  @@map("students")
+}
+
+model Contest {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // offline / online
+  platform    String?
+  date        String   // YYYY-MM
+  description String?
+  totalScore  Int?
+  timeLimit   String?
+  isTeam      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  results StudentContestResult[]
+
+  @@map("contests")
+}
+
+model StudentContestResult {
+  id              String  @id @default(cuid())
+  studentId       String
+  contestId       String
+  award           String?
+  score           Int?
+  rank            Int?
+  atcoderRank     Int?
+  atcoderRating   Int?
+  notes           String?
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  contest Contest @relation(fields: [contestId], references: [id], onDelete: Cascade)
+
+  @@map("student_contest_results")
+}
+
+model KnowledgePoint {
+  id            String @id @default(cuid())
+  name          String
+  level         Int
+  levelAlias    String
+  category      String
+  description   String?
+  prerequisites String?
+  createdAt     DateTime @default(now())
+
+  students StudentKnowledge[]
+
+  @@map("knowledge_points")
+}
+
+model StudentKnowledge {
+  id               String @id @default(cuid())
+  studentId        String
+  knowledgePointId String
+  certifiedAt      String // YYYYMM
+  status           String @default("certified")
+  notes            String?
+
+  student        Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  knowledgePoint KnowledgePoint @relation(fields: [knowledgePointId], references: [id], onDelete: Cascade)
+
+  @@map("student_knowledges")
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  studentId   String
+  title       String
+  category    String?
+  problemIds  String?
+  status      String   @default("pending")
+  priority    String   @default("normal")
+  dueDate     String?
+  createdAt   DateTime @default(now())
+  completedAt DateTime?
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("tasks")
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  category  String   @default("general")
+  date      String?
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("announcements")
+}
+
+model Schedule {
+  id        String  @id @default(cuid())
+  day       String
+  startTime String
+  endTime   String
+  note      String?
+  isActive  Boolean @default(true)
+
+  @@map("schedules")
+}
+
+model ExternalLink {
+  id        String @id @default(cuid())
+  name      String
+  url       String
+  category  String @default("platform")
+  icon      String?
+  sortOrder Int    @default(0)
+
+  @@map("external_links")
+}
+
+model Rule {
+  id        String @id @default(cuid())
+  name      String
+  description String
+  features  String?
+  examples  String?
+  sortOrder Int    @default(0)
+
+  @@map("rules")
+}
