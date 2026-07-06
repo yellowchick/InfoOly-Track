@@ -41,6 +41,10 @@ npm install
 # 创建环境变量（从模板复制）
 cp .env.example .env.local
 
+# 配置 Moonshot API Key（AI 智能导入功能需要）
+# 1. 前往 https://platform.moonshot.cn/ 获取 API Key
+# 2. 将 key 填入 .env.local 的 MOONSHOT_API_KEY
+
 # 初始化数据库
 npx prisma db push
 npm run db:seed

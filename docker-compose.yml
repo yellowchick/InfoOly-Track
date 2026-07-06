@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: info-oly-track
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      # 覆盖 SQLite 数据库路径，使其指向持久化卷
+      - DATABASE_URL=file:/app/data/dev.db
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+    volumes:
+      # 数据持久化：宿主的 ./data 挂载到容器的 /app/data
+      - ./data:/app/data
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
