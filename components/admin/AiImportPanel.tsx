@@ -444,30 +444,65 @@ export default function AiImportPanel() {
         </Card>
       ) : null}
 
-      {/* 无可导入数据提示 */}
-      {preview && totalNewItems === 0 && preview.duplicates.length === 0 && preview.errors.length === 0 && (
-        <div className="rounded-lg border border-border bg-card p-6 text-center">
-          <p className="text-sm text-muted">未解析到任何有效数据</p>
-        </div>
+      {/* 无法导入原因提示 */}
+      {preview && !result?.success && totalNewItems === 0 && (
+        <Card className="border-warning/30">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-warning" />
+              无可导入数据
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {preview.duplicates.length > 0 && (
+              <p className="text-sm text-muted">
+                所有解析出的数据已存在于数据库中（{preview.duplicates.length} 条重复）
+              </p>
+            )}
+            {preview.errors.length > 0 && (
+              <p className="text-sm text-muted">
+                解析数据存在错误，请修正后重试（{preview.errors.length} 条错误）
+              </p>
+            )}
+            {preview.duplicates.length === 0 && preview.errors.length === 0 && (
+              <p className="text-sm text-muted">
+                未解析到任何有效数据，请检查输入内容是否包含可识别的学生、任务、知识点或比赛成绩
+              </p>
+            )}
+          </CardContent>
+        </Card>
       )}
 
-      {/* 确认导入按钮 */}
-      {canImport && preview && totalNewItems > 0 && (
-        <div className="flex justify-end gap-3">
+      {/* Sticky 底部按钮区域 */}
+      {preview && !result?.success && (
+        <div className="sticky bottom-20 z-10 flex justify-end gap-3 rounded-xl border border-border bg-card/95 backdrop-blur-sm p-4 shadow-lg">
           <Button variant="outline" onClick={handleClear}>
             取消
           </Button>
-          <Button
-            onClick={handleImport}
-            disabled={importing}
-            className="gap-2"
-          >
-            {importing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <CheckCircle className="h-4 w-4" />
-            )}
-            {importing ? '导入中...' : '确认导入'}
+          {canImport && totalNewItems > 0 ? (
+            <Button onClick={handleImport} disabled={importing} className="gap-2">
+              {importing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle className="h-4 w-4" />
+              )}
+              {importing ? '导入中...' : '确认导入'}
+            </Button>
+          ) : (
+            <Button disabled variant="secondary" className="gap-2">
+              <AlertCircle className="h-4 w-4" />
+              无可导入数据
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* 导入成功后的重新输入按钮 */}
+      {result?.success && (
+        <div className="flex justify-end">
+          <Button onClick={handleClear} variant="outline" className="gap-2">
+            <X className="h-4 w-4" />
+            重新输入
           </Button>
         </div>
       )}

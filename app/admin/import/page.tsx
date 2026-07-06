@@ -107,7 +107,6 @@ export default function ImportPage() {
 
       if (res.ok) {
         setResult({ success: true, message: '导入成功！' })
-        setPreview(null)
         setFile(null)
         setRawText('')
         if (fileInputRef.current) fileInputRef.current.value = ''
@@ -270,15 +269,28 @@ export default function ImportPage() {
                     </div>
                   )}
 
-                  <div className="flex justify-end gap-3 pt-2">
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Sticky Import Buttons */}
+            {preview && (
+              <div className="sticky bottom-20 z-10 flex justify-end gap-3 rounded-xl border border-border bg-card/95 backdrop-blur-sm p-4 shadow-lg">
+                {result?.success ? (
+                  <Button onClick={clearFile} variant="outline" className="gap-2">
+                    <Upload className="h-4 w-4" />
+                    重新上传
+                  </Button>
+                ) : (
+                  <>
                     <Button variant="outline" onClick={clearFile}>取消</Button>
                     <Button onClick={handleImport} disabled={loading} className="gap-2">
                       <CheckCircle className="h-4 w-4" />
                       {loading ? '导入中...' : '确认导入'}
                     </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                  </>
+                )}
+              </div>
             )}
 
             {/* Result */}
