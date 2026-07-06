@@ -164,7 +164,11 @@ export async function analyzeTextWithAI(
     if (!Array.isArray(parsed.entities)) {
       throw new Error('AI 返回的 JSON 缺少 entities 数组')
     }
-    const entities = parsed.entities.filter(isValidEntity) as AIEntity[]
+    const normalized = parsed.entities.map((e: any) => ({
+      type: e.type,
+      data: e.data || e.value,
+    }))
+    const entities = normalized.filter(isValidEntity) as AIEntity[]
     return { entities }
   } catch (e) {
     throw new Error(
@@ -213,17 +217,8 @@ function isValidEntity(item: unknown): item is AIEntity {
   if (!item || typeof item !== 'object') return false
   const obj = item as Record<string, unknown>
   if (!obj.type || typeof obj.type !== 'string') return false
-  // AI 可能返回 data 或 value 字段
-  const dataObj = obj.data || obj.value
-  if (!dataObj || typeof dataObj !== 'object') return false
+  if (!obj.data || typeof obj.data !== 'object') return false
   return ['student', 'task', 'knowledge', 'contest_result'].includes(obj.type)
-}
-
-/**
- * 统一获取实体 data（支持 data 或 value 字段）
- */
-function getEntityData<T extends AIEntity>(entity: T): T['data'] {
-  return (entity as any).data || (entity as any).value
 }
 
 /**
@@ -290,9 +285,9 @@ export async function deduplicate(
   const allStudentNames = new Set<string>()
   for (const entity of parsedData.entities) {
     if (entity.type === 'student') {
-      allStudentNames.add(getEntityData(entity).name)
-    } else if ('studentName' in getEntityData(entity)) {
-      allStudentNames.add(getEntityData(entity).studentName)
+      allStudentNames.add(entity.data.name)
+    } else if ('studentName' in entity.data) {
+      allStudentNames.add(entity.data.studentName)
     }
   }
 
@@ -300,7 +295,7 @@ export async function deduplicate(
   for (const entity of parsedData.entities) {
     if (entity.type !== 'student') continue
 
-    const { name, displayName } = getEntityData(entity)
+    const { name, displayName } = entity.data
     if (existingStudentNames.has(name)) {
       result.duplicates.push({
         entity: `学生: ${name}`,
@@ -328,7 +323,7 @@ export async function deduplicate(
     if (entity.type !== 'task') continue
 
     const { studentName, title, status, category, priority, dueDate } =
-      getEntityData(entity)
+      entity.data
 
     if (!allStudentNames.has(studentName)) {
       result.errors.push({
@@ -378,7 +373,7 @@ export async function deduplicate(
   for (const entity of parsedData.entities) {
     if (entity.type !== 'knowledge') continue
 
-    const { studentName, knowledgeName, certifiedAt } = getEntityData(entity)
+    const { studentName, knowledgeName, certifiedAt } = entity.data
 
     if (!allStudentNames.has(studentName)) {
       result.errors.push({
@@ -447,7 +442,7 @@ export async function deduplicate(
       date,
       platform,
       contestType,
-    } = getEntityData(entity)
+    } = entity.data
 
     if (!allStudentNames.has(studentName)) {
       result.errors.push({

@@ -64,6 +64,19 @@ export interface ParsedData {
     status: string
     category?: string
   }[]
+  // 以下字段由 parseMarkdown 自动提取，方便外部直接使用
+  students: { name: string; displayName?: string }[]
+  contestResults: {
+    studentName: string
+    contestName: string
+    score?: number
+    award?: string
+    rank?: number
+    notes?: string
+    date?: string
+    platform?: string
+    contestType?: string
+  }[]
 }
 
 function getIndentLevel(line: string): number {
@@ -90,6 +103,8 @@ export function parseMarkdown(content: string): ParsedData {
     schedules: [],
     studentKnowledges: [],
     tasks: [],
+    students: [],
+    contestResults: [],
   }
 
   let i = 0
@@ -112,6 +127,30 @@ export function parseMarkdown(content: string): ParsedData {
       i = parseTasks(lines, i + 1, result)
     } else {
       i++
+    }
+  }
+
+  // 从 studentKnowledges 提取唯一学生列表
+  const studentNameSet = new Set<string>()
+  for (const sk of result.studentKnowledges) {
+    studentNameSet.add(sk.studentName)
+  }
+  result.students = Array.from(studentNameSet).map((name) => ({ name }))
+
+  // 从 contests 提取比赛成绩（附加比赛名和日期）
+  for (const contest of result.contests) {
+    for (const r of contest.results) {
+      result.contestResults.push({
+        studentName: r.studentName,
+        contestName: contest.contest.name,
+        score: r.score,
+        award: r.award,
+        rank: r.rank,
+        notes: r.notes,
+        date: contest.contest.date,
+        platform: contest.contest.platform,
+        contestType: contest.contest.type,
+      })
     }
   }
 

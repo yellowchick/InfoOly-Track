@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { checkAdmin } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { parseMarkdown } from '@/lib/parser'
 
 export async function POST(request: Request) {
   try {
@@ -9,6 +11,7 @@ export async function POST(request: Request) {
 
     const formData = await request.formData()
     const file = formData.get('file') as File
+    const confirm = formData.get('confirm') === 'true'
 
     if (!file) {
       return NextResponse.json(
@@ -26,43 +29,149 @@ export async function POST(request: Request) {
 
     const text = await file.text()
 
-    // Simple preview parsing - extract basic structure
-    const lines = text.split('\n')
-    const preview = {
-      fileName: file.name,
-      lineCount: lines.length,
-      headings: lines
-        .filter((line) => line.startsWith('#'))
-        .map((line) => line.trim()),
-      students: [] as string[],
-      contests: [] as string[],
-      knowledge: [] as string[],
-      tasks: [] as string[],
+    // 解析 Markdown
+    const parsed = parseMarkdown(text)
+
+    // 预览模式：返回解析结果供确认
+    if (!confirm) {
+      const preview = {
+        fileName: file.name,
+        lineCount: text.split('\n').length,
+        headings: text.split('\n').filter((l) => l.startsWith('#')).map((l) => l.trim()),
+        students: parsed.students.map((s) => s.name),
+        contests: parsed.contests.map((c) => c.contest.name),
+        knowledge: parsed.knowledgePoints.map((k) => k.name),
+        tasks: parsed.tasks.map((t) => t.title),
+      }
+      return NextResponse.json({ preview, rawText: text })
     }
 
-    // Extract student names (lines starting with ## 学生)
-    let currentSection = ''
-    for (const line of lines) {
-      if (line.includes('学生') && line.startsWith('#')) {
-        currentSection = 'students'
-      } else if (line.includes('比赛') && line.startsWith('#')) {
-        currentSection = 'contests'
-      } else if (line.includes('知识点') && line.startsWith('#')) {
-        currentSection = 'knowledge'
-      } else if (line.includes('任务') && line.startsWith('#')) {
-        currentSection = 'tasks'
-      }
+    // 确认导入模式：写入数据库
+    const result = {
+      students: 0,
+      contests: 0,
+      knowledgePoints: 0,
+      tasks: 0,
+      contestResults: 0,
+      errors: [] as string[],
+    }
 
-      if (line.startsWith('- ') || line.startsWith('* ')) {
-        const content = line.slice(2).trim()
-        if (currentSection && content) {
-          const section = currentSection as 'students' | 'contests' | 'knowledge' | 'tasks'
-          preview[section].push(content)
+    await prisma.$transaction(async (tx) => {
+      // 1. 导入学生
+      const studentNameToId = new Map<string, string>()
+      const existingStudents = await tx.student.findMany({ select: { id: true, name: true } })
+      for (const s of existingStudents) studentNameToId.set(s.name, s.id)
+
+      for (const student of parsed.students) {
+        if (studentNameToId.has(student.name)) continue
+        try {
+          const created = await tx.student.create({
+            data: {
+              name: student.name,
+              displayName: student.displayName || student.name,
+            },
+          })
+          studentNameToId.set(student.name, created.id)
+          result.students++
+        } catch (e) {
+          result.errors.push(`创建学生 "${student.name}" 失败`)
         }
       }
-    }
 
-    return NextResponse.json({ preview, rawText: text })
+      // 2. 导入比赛
+      const contestNameToId = new Map<string, string>()
+      const existingContests = await tx.contest.findMany({ select: { id: true, name: true, date: true } })
+      for (const c of existingContests) contestNameToId.set(`${c.name}-${c.date}`, c.id)
+
+      for (const contestItem of parsed.contests) {
+        const contest = contestItem.contest
+        const key = `${contest.name}-${contest.date}`
+        if (contestNameToId.has(key)) continue
+        try {
+          const created = await tx.contest.create({
+            data: {
+              name: contest.name,
+              type: contest.type || 'offline',
+              platform: contest.platform,
+              date: contest.date,
+              description: contest.description,
+              totalScore: contest.totalScore,
+              timeLimit: contest.timeLimit,
+              isTeam: contest.isTeam || false,
+            },
+          })
+          contestNameToId.set(key, created.id)
+          result.contests++
+        } catch (e) {
+          result.errors.push(`创建比赛 "${contest.name}" 失败`)
+        }
+      }
+
+      // 3. 导入知识点
+      const knowledgeNameToId = new Map<string, string>()
+      const existingKnowledge = await tx.knowledgePoint.findMany({ select: { id: true, name: true } })
+      for (const k of existingKnowledge) knowledgeNameToId.set(k.name, k.id)
+
+      for (const kp of parsed.knowledgePoints) {
+        if (knowledgeNameToId.has(kp.name)) continue
+        try {
+          const created = await tx.knowledgePoint.create({
+            data: {
+              name: kp.name,
+              level: kp.level,
+              levelAlias: kp.levelAlias,
+              category: kp.category,
+              description: kp.description,
+              prerequisites: kp.prerequisites,
+            },
+          })
+          knowledgeNameToId.set(kp.name, created.id)
+          result.knowledgePoints++
+        } catch (e) {
+          result.errors.push(`创建知识点 "${kp.name}" 失败`)
+        }
+      }
+
+      // 4. 导入任务（Markdown 任务板无学生关联信息，暂不支持自动导入）
+      if (parsed.tasks.length > 0) {
+        result.errors.push(`跳过 ${parsed.tasks.length} 个任务：Markdown 任务板缺少学生关联信息`)
+      }
+
+      // 5. 导入比赛成绩
+      for (const cr of parsed.contestResults) {
+        const studentId = studentNameToId.get(cr.studentName)
+        if (!studentId) {
+          result.errors.push(`成绩：学生 "${cr.studentName}" 不存在`)
+          continue
+        }
+        const contestId = contestNameToId.get(`${cr.contestName}-${cr.date || 'unknown'}`)
+        if (!contestId) {
+          result.errors.push(`成绩：比赛 "${cr.contestName}" 不存在`)
+          continue
+        }
+        try {
+          await tx.studentContestResult.create({
+            data: {
+              studentId,
+              contestId,
+              award: cr.award,
+              score: cr.score,
+              rank: cr.rank,
+              notes: cr.notes,
+            },
+          })
+          result.contestResults++
+        } catch (e) {
+          result.errors.push(`创建成绩 "${cr.contestName} - ${cr.studentName}" 失败`)
+        }
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: `导入完成：学生 ${result.students} 人，比赛 ${result.contests} 场，知识点 ${result.knowledgePoints} 条，任务 ${result.tasks} 条，成绩 ${result.contestResults} 条`,
+      result,
+    })
   } catch (error) {
     console.error('Import error:', error)
     return NextResponse.json(
