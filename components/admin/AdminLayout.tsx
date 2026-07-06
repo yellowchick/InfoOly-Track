@@ -54,7 +54,7 @@ export default function AdminLayout({
         <div className="flex h-16 items-center px-6">
           <span className="text-lg font-bold">InfoOly 管理后台</span>
         </div>
-        <nav className="flex-1 space-y-1 px-3 py-4">
+        <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href)
             const Icon = item.icon
@@ -99,7 +99,7 @@ export default function AdminLayout({
           </button>
         </header>
         {mobileOpen && (
-          <nav className="border-b border-border bg-slate-900 px-3 pb-3 text-white">
+          <nav className="border-b border-border bg-slate-900 px-3 pb-3 text-white max-h-64 overflow-y-auto">
             {navItems.map((item) => {
               const isActive = pathname === item.href || pathname.startsWith(item.href)
               const Icon = item.icon
@@ -130,7 +130,7 @@ export default function AdminLayout({
             </Button>
           </nav>
         )}
-        <main className="flex-1 p-4">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4">{children}</main>
       </div>
 
       {/* Desktop Content */}
@@ -140,7 +140,7 @@ export default function AdminLayout({
             {navItems.find((item) => pathname === item.href || pathname.startsWith(item.href))?.label || '管理后台'}
           </h1>
         </div>
-        <div className="flex-1 p-8">{children}</div>
+        <div className="flex-1 overflow-y-auto p-8">{children}</div>
       </main>
     </div>
   )

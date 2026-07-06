@@ -56,6 +56,10 @@ export async function POST(request: Request) {
       errors: [] as string[],
     }
 
+    // 统一的日期默认值（确保新比赛创建和查找时 key 一致）
+    const now = new Date()
+    const defaultDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
     await prisma.$transaction(async (tx) => {
       // 1. 导入学生
       const studentNameToId = new Map<string, string>()
@@ -78,14 +82,15 @@ export async function POST(request: Request) {
         }
       }
 
-      // 2. 导入比赛
+      // 2. 导入比赛（确保日期始终有值，防止 key 不匹配）
       const contestNameToId = new Map<string, string>()
       const existingContests = await tx.contest.findMany({ select: { id: true, name: true, date: true } })
-      for (const c of existingContests) contestNameToId.set(`${c.name}-${c.date}`, c.id)
+      for (const c of existingContests) contestNameToId.set(`${c.name}-${c.date || defaultDate}`, c.id)
 
       for (const contestItem of parsed.contests) {
         const contest = contestItem.contest
-        const key = `${contest.name}-${contest.date}`
+        const safeDate = contest.date || defaultDate
+        const key = `${contest.name}-${safeDate}`
         if (contestNameToId.has(key)) continue
         try {
           const created = await tx.contest.create({
@@ -93,7 +98,7 @@ export async function POST(request: Request) {
               name: contest.name,
               type: contest.type || 'offline',
               platform: contest.platform,
-              date: contest.date,
+              date: safeDate,
               description: contest.description,
               totalScore: contest.totalScore,
               timeLimit: contest.timeLimit,
@@ -137,16 +142,18 @@ export async function POST(request: Request) {
         result.errors.push(`跳过 ${parsed.tasks.length} 个任务：Markdown 任务板缺少学生关联信息`)
       }
 
-      // 5. 导入比赛成绩
+      // 5. 导入比赛成绩（使用统一的日期默认值确保 key 匹配）
       for (const cr of parsed.contestResults) {
         const studentId = studentNameToId.get(cr.studentName)
         if (!studentId) {
           result.errors.push(`成绩：学生 "${cr.studentName}" 不存在`)
           continue
         }
-        const contestId = contestNameToId.get(`${cr.contestName}-${cr.date || 'unknown'}`)
+        const safeDate = cr.date || defaultDate
+        const contestKey = `${cr.contestName}-${safeDate}`
+        const contestId = contestNameToId.get(contestKey)
         if (!contestId) {
-          result.errors.push(`成绩：比赛 "${cr.contestName}" 不存在`)
+          result.errors.push(`成绩：比赛 "${cr.contestName}"（日期：${safeDate}）不存在，key=${contestKey}`)
           continue
         }
         try {
