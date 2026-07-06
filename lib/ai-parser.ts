@@ -213,8 +213,17 @@ function isValidEntity(item: unknown): item is AIEntity {
   if (!item || typeof item !== 'object') return false
   const obj = item as Record<string, unknown>
   if (!obj.type || typeof obj.type !== 'string') return false
-  if (!obj.data || typeof obj.data !== 'object') return false
+  // AI 可能返回 data 或 value 字段
+  const dataObj = obj.data || obj.value
+  if (!dataObj || typeof dataObj !== 'object') return false
   return ['student', 'task', 'knowledge', 'contest_result'].includes(obj.type)
+}
+
+/**
+ * 统一获取实体 data（支持 data 或 value 字段）
+ */
+function getEntityData<T extends AIEntity>(entity: T): T['data'] {
+  return (entity as any).data || (entity as any).value
 }
 
 /**
@@ -281,9 +290,9 @@ export async function deduplicate(
   const allStudentNames = new Set<string>()
   for (const entity of parsedData.entities) {
     if (entity.type === 'student') {
-      allStudentNames.add(entity.data.name)
-    } else if ('studentName' in entity.data) {
-      allStudentNames.add(entity.data.studentName)
+      allStudentNames.add(getEntityData(entity).name)
+    } else if ('studentName' in getEntityData(entity)) {
+      allStudentNames.add(getEntityData(entity).studentName)
     }
   }
 
@@ -291,7 +300,7 @@ export async function deduplicate(
   for (const entity of parsedData.entities) {
     if (entity.type !== 'student') continue
 
-    const { name, displayName } = entity.data
+    const { name, displayName } = getEntityData(entity)
     if (existingStudentNames.has(name)) {
       result.duplicates.push({
         entity: `学生: ${name}`,
@@ -319,7 +328,7 @@ export async function deduplicate(
     if (entity.type !== 'task') continue
 
     const { studentName, title, status, category, priority, dueDate } =
-      entity.data
+      getEntityData(entity)
 
     if (!allStudentNames.has(studentName)) {
       result.errors.push({
@@ -369,7 +378,7 @@ export async function deduplicate(
   for (const entity of parsedData.entities) {
     if (entity.type !== 'knowledge') continue
 
-    const { studentName, knowledgeName, certifiedAt } = entity.data
+    const { studentName, knowledgeName, certifiedAt } = getEntityData(entity)
 
     if (!allStudentNames.has(studentName)) {
       result.errors.push({
@@ -438,7 +447,7 @@ export async function deduplicate(
       date,
       platform,
       contestType,
-    } = entity.data
+    } = getEntityData(entity)
 
     if (!allStudentNames.has(studentName)) {
       result.errors.push({

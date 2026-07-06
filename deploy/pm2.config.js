@@ -8,8 +8,10 @@ module.exports = {
   apps: [
     {
       name: 'info-oly-track',
-      script: 'npm',
+      // 使用 node 直接运行 next start，避免 spawn npm 的问题
+      script: './node_modules/.bin/next',
       args: 'start',
+      interpreter: '/usr/bin/node',
       // 部署目录，请根据实际路径修改
       cwd: '/var/www/info-oly-track',
 
