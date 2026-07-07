@@ -290,8 +290,23 @@ async function processTasks(data, prisma) {
 
     for (const task of studentData.tasks) {
       if (!task.completed) {
-        log(`  [忽略] 任务未勾选，保持原状态: ${studentData.name} - ${task.title}`);
-        stats.tasks.skipped++;
+        // 未勾选的任务也创建，但状态为 pending
+        if (!existingTask) {
+          await prisma.task.create({
+            data: {
+              studentId: student.id,
+              title: task.title,
+              status: 'pending',
+              priority: 'normal',
+              category: 'CSP'
+            }
+          });
+          log(`  [创建] 新任务（未开始）: ${studentData.name} - ${task.title}`);
+          stats.tasks.created++;
+        } else {
+          log(`  [忽略] 任务已存在，保持${existingTask.status}: ${studentData.name} - ${task.title}`);
+          stats.tasks.skipped++;
+        }
         continue;
       }
 

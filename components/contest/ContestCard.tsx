@@ -61,8 +61,8 @@ export default function ContestCard({ contest, results }: Props) {
               </div>
               <span className="text-xs text-foreground">{r.student?.displayName || r.student?.name}</span>
               {r.award && <span className="text-xs text-yellow-600 font-medium">{r.award}</span>}
-              {r.score !== undefined && r.score !== null && !r.award && (
-                <span className="text-xs font-medium">{r.score}</span>
+              {r.score !== undefined && r.score !== null && (
+                <span className="text-xs font-medium text-muted-foreground">{r.score}分</span>
               )}
             </div>
           ))}
