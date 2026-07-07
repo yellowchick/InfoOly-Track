@@ -82,7 +82,8 @@ export function StudentDetailTabs({ student }: StudentDetailTabsProps) {
                         <p className="text-xs text-muted-foreground">{cr.contest?.date}</p>
                       </div>
                       <span className="text-sm font-semibold text-yellow-600">
-                        {cr.award || `得分: ${cr.score}`}
+                        {cr.award || ''}
+                        {cr.score !== undefined && cr.score !== null ? ` (${cr.score}分)` : ''}
                       </span>
                     </div>
                   ))}
@@ -133,15 +134,15 @@ export function StudentDetailTabs({ student }: StudentDetailTabsProps) {
                         </p>
                       )}
                     </div>
-                    <div className="text-right shrink-0">
+                    <div className="text-right shrink-0 space-y-1">
                       {cr.award && (
                         <span className="inline-block rounded-full px-3 py-1 text-sm font-semibold bg-yellow-50 text-yellow-600 border border-yellow-200">
                           {cr.award}
                         </span>
                       )}
-                      {cr.score !== undefined && !cr.award && (
-                        <span className="text-lg font-bold text-blue-600">
-                          {cr.score}
+                      {cr.score !== undefined && cr.score !== null && (
+                        <span className="text-lg font-bold text-blue-600 block">
+                          {cr.score}分
                         </span>
                       )}
                     </div>
