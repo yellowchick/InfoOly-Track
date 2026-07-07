@@ -4,6 +4,9 @@ import { fallbackTasks, fallbackStudents } from '@/lib/fallback-data'
 import { Task, Student } from '@/types'
 import TaskBoardClient from './TaskBoardClient'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export const metadata: Metadata = {
   title: '任务板 - InfoOly Track',
   description: '追踪每一位选手的学习进度',
@@ -24,8 +27,8 @@ function serializeStudent(s: {
     displayName: s.displayName,
     avatarUrl: s.avatarUrl ?? undefined,
     bio: s.bio ?? undefined,
-    createdAt: s.createdAt.toISOString(),
-    updatedAt: s.updatedAt.toISOString(),
+    createdAt: s.createdAt?.toISOString(),
+    updatedAt: s.updatedAt?.toISOString(),
   }
 }
 

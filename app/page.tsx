@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   description: '信息学奥林匹克竞赛学生生涯记录平台首页',
 }
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const fallbackStats = {
   studentCount: 4,
   contestCount: 12,

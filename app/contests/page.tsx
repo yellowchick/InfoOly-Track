@@ -38,8 +38,8 @@ function serializeContest(c: any) {
         displayName: r.student.displayName,
         avatarUrl: r.student.avatarUrl ?? undefined,
         bio: r.student.bio ?? undefined,
-        createdAt: r.student.createdAt.toISOString(),
-        updatedAt: r.student.updatedAt.toISOString(),
+        createdAt: r.student.createdAt?.toISOString(),
+        updatedAt: r.student.updatedAt?.toISOString(),
       },
     })),
   }
