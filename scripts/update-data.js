@@ -289,6 +289,10 @@ async function processTasks(data, prisma) {
     }
 
     for (const task of studentData.tasks) {
+      const existingTask = await prisma.task.findFirst({
+        where: { title: task.title, studentId: student.id }
+      });
+
       if (!task.completed) {
         // 未勾选的任务也创建，但状态为 pending
         if (!existingTask) {
@@ -309,10 +313,6 @@ async function processTasks(data, prisma) {
         }
         continue;
       }
-
-      const existingTask = await prisma.task.findFirst({
-        where: { title: task.title, studentId: student.id }
-      });
 
       if (!existingTask) {
         // 任务不存在，创建新任务并标记为完成
