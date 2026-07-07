@@ -133,6 +133,12 @@ export async function analyzeTextWithAI(
 3. knowledge（知识点认证）：{ studentName, knowledgeName, certifiedAt? }，certifiedAt 格式为 YYYYMM（如 202603），如未提供则使用当前年月
 4. contest_result（比赛成绩）：{ studentName, contestName, score?, award?, rank?, notes?, date?, platform?, contestType? }，date 格式为 YYYY-MM
 
+重要规则：
+- GESP（中国计算机学会编程能力等级认证）是等级考试，不是排名。例如 "GESP 5级" 或 "通过5级" 应该作为 award 字段（如 award: "5级" 或 award: "通过5级"），而不是 score 或 rank。
+- 得分类的比赛（如 CSP、USACO、YACS、AtCoder）使用 score 字段存储具体分数。
+- 排名类的信息（如 "排名 15" 或 "第 3 名"）使用 rank 字段。
+- 奖项（如 "一等奖"、"二等奖"、"金牌"、"铜牌"）使用 award 字段。
+
 返回格式必须是合法的 JSON 对象，包含 entities 字段，entities 是一个数组，每个元素包含 type 和 data 字段。
 不要输出任何解释文字，只输出 JSON。`,
         },

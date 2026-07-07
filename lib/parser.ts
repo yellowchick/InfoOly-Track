@@ -303,8 +303,8 @@ function parseContests(lines: string[], start: number, result: ParsedData): numb
           }
         }
 
-        const studentAwardMatch = text.match(/^(\S+)\s+(一等|二等|三等|金牌|银牌|铜牌|优秀奖|参与奖|一等奖|二等奖|三等奖)/)
-        const studentScoreMatch = text.match(/^(\S+)\s+(\d+)/)
+        const studentAwardMatch = text.match(/^(\S+)\s+(一等|二等|三等|金牌|银牌|铜牌|优秀奖|参与奖|一等奖|二等奖|三等奖|通过\d+级|\d+级)/)
+        const studentScoreMatch = text.match(/^(\S+)\s+(\d+)(?!级)/)
 
         if (studentAwardMatch) {
           const studentName = studentAwardMatch[1].trim()

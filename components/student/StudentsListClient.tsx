@@ -5,22 +5,22 @@ import { Student } from '@/types'
 import { StudentCard } from '@/components/student/StudentCard'
 import { Input } from '@/components/ui/input'
 import { Search, Users } from 'lucide-react'
-import { getStudentStats, studentsSeedData } from '@/lib/student-data'
 
-interface StudentsListClientProps {
-  allStudents: Student[]
+interface StudentWithStats {
+  student: Student
+  stats: {
+    contestCount: number
+    knowledgeCount: number
+    taskCompletionRate: number
+  }
 }
 
-export function StudentsListClient({ allStudents }: StudentsListClientProps) {
-  const [searchQuery, setSearchQuery] = useState('')
+interface StudentsListClientProps {
+  studentsWithStats: StudentWithStats[]
+}
 
-  const studentsWithStats = useMemo(() => {
-    return allStudents.map(student => {
-      const fullProfile = studentsSeedData.find(s => s.id === student.id)
-      if (!fullProfile) return { student, stats: { contestCount: 0, knowledgeCount: 0, taskCompletionRate: 0 } }
-      return { student, stats: getStudentStats(fullProfile) }
-    })
-  }, [allStudents])
+export function StudentsListClient({ studentsWithStats }: StudentsListClientProps) {
+  const [searchQuery, setSearchQuery] = useState('')
 
   const filteredStudents = useMemo(() => {
     if (!searchQuery.trim()) return studentsWithStats

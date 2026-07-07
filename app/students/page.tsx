@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 }
 
 export default async function StudentsPage() {
-  let students: any[] = []
+  let studentsWithStats: any[] = []
 
   try {
     const dbStudents = await prisma.student.findMany({
@@ -24,23 +24,75 @@ export default async function StudentsPage() {
         updatedAt: true,
       },
     })
-    students = dbStudents.map((s) => ({
-      ...s,
-      avatarUrl: s.avatarUrl ?? undefined,
-      bio: s.bio ?? undefined,
-      createdAt: s.createdAt.toISOString(),
-      updatedAt: s.updatedAt.toISOString(),
-    }))
+
+    // 并行查询每个学生的统计信息
+    const statsList = await Promise.all(
+      dbStudents.map(async (student) => {
+        const [contestCount, knowledgeCount, taskCount, completedTaskCount] =
+          await Promise.all([
+            prisma.studentContestResult.count({
+              where: { studentId: student.id },
+            }),
+            prisma.studentKnowledge.count({
+              where: { studentId: student.id },
+            }),
+            prisma.task.count({
+              where: { studentId: student.id },
+            }),
+            prisma.task.count({
+              where: { studentId: student.id, status: 'completed' },
+            }),
+          ])
+
+        const taskCompletionRate =
+          taskCount > 0
+            ? Math.round((completedTaskCount / taskCount) * 100)
+            : 0
+
+        return {
+          student: {
+            ...student,
+            avatarUrl: student.avatarUrl ?? undefined,
+            bio: student.bio ?? undefined,
+            createdAt: student.createdAt.toISOString(),
+            updatedAt: student.updatedAt.toISOString(),
+          },
+          stats: {
+            contestCount,
+            knowledgeCount,
+            taskCompletionRate,
+          },
+        }
+      })
+    )
+
+    studentsWithStats = statsList
   } catch (error) {
     console.warn('Database query failed, using fallback data:', error)
-    students = studentsSeedData.map(
-      ({ contestResults, knowledges, tasks, ...student }) => ({
-        ...student,
-        createdAt: student.createdAt,
-        updatedAt: student.updatedAt,
-      })
+    studentsWithStats = studentsSeedData.map(
+      ({ contestResults, knowledges, tasks, ...student }) => {
+        const totalTasks = tasks.length
+        const completedTasks = tasks.filter(
+          (t: any) => t.status === 'completed'
+        ).length
+        return {
+          student: {
+            ...student,
+            createdAt: student.createdAt,
+            updatedAt: student.updatedAt,
+          },
+          stats: {
+            contestCount: contestResults.length,
+            knowledgeCount: knowledges.length,
+            taskCompletionRate:
+              totalTasks > 0
+                ? Math.round((completedTasks / totalTasks) * 100)
+                : 0,
+          },
+        }
+      }
     )
   }
 
-  return <StudentsListClient allStudents={students} />
+  return <StudentsListClient studentsWithStats={studentsWithStats} />
 }
