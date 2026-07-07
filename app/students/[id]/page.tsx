@@ -64,36 +64,36 @@ export default async function StudentDetailPage({ params }: PageProps) {
         ...dbStudent,
         avatarUrl: dbStudent.avatarUrl ?? undefined,
         bio: dbStudent.bio ?? undefined,
-        createdAt: dbStudent.createdAt.toISOString(),
-        updatedAt: dbStudent.updatedAt.toISOString(),
+        createdAt: dbStudent.createdAt?.toISOString(),
+        updatedAt: dbStudent.updatedAt?.toISOString(),
         contestResults: dbStudent.contestResults.map((cr: any) => ({
           ...cr,
-          createdAt: cr.createdAt.toISOString(),
-          updatedAt: cr.updatedAt.toISOString(),
+          createdAt: cr.createdAt?.toISOString(),
+          updatedAt: cr.updatedAt?.toISOString(),
           contest: cr.contest
             ? {
                 ...cr.contest,
-                createdAt: cr.contest.createdAt.toISOString(),
-                updatedAt: cr.contest.updatedAt.toISOString(),
+                createdAt: cr.contest.createdAt?.toISOString(),
+                updatedAt: cr.contest.updatedAt?.toISOString(),
               }
             : undefined,
         })),
         knowledges: dbStudent.knowledges.map((sk: any) => ({
           ...sk,
-          createdAt: sk.createdAt.toISOString(),
-          updatedAt: sk.updatedAt.toISOString(),
+          createdAt: sk.createdAt?.toISOString(),
+          updatedAt: sk.updatedAt?.toISOString(),
           knowledgePoint: sk.knowledgePoint
             ? {
                 ...sk.knowledgePoint,
-                createdAt: sk.knowledgePoint.createdAt.toISOString(),
-                updatedAt: sk.knowledgePoint.updatedAt.toISOString(),
+                createdAt: sk.knowledgePoint.createdAt?.toISOString(),
+                updatedAt: sk.knowledgePoint.updatedAt?.toISOString(),
               }
             : undefined,
         })),
         tasks: dbStudent.tasks.map((t: any) => ({
           ...t,
-          createdAt: t.createdAt.toISOString(),
-          updatedAt: t.updatedAt.toISOString(),
+          createdAt: t.createdAt?.toISOString(),
+          updatedAt: t.updatedAt?.toISOString(),
           completedAt: t.completedAt ? t.completedAt.toISOString() : undefined,
           category: t.category ?? undefined,
           problemIds: t.problemIds ?? undefined,
