@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { fallbackContests } from '@/lib/fallback-data'
 import ContestsClient from './ContestsClient'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export const metadata: Metadata = {
   title: '比赛记录 - InfoOly Track',
   description: '记录每一次征战与荣耀',

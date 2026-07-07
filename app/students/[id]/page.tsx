@@ -4,6 +4,9 @@ import { StudentDetailTabs } from '@/components/student/StudentDetailTabs'
 import { prisma } from '@/lib/prisma'
 import { getStudentById, studentsSeedData } from '@/lib/student-data'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 interface PageProps {
   params: { id: string }
 }
