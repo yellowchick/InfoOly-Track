@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { ChevronDown, ChevronUp, Users, Clock, Target } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { cn, formatDate } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { Contest, StudentContestResult } from '@/types'
 import PlatformIcon, { getPlatformBorderColor } from './PlatformIcon'
 import StudentResultRow from './StudentResultRow'
@@ -26,7 +26,7 @@ export default function ContestCard({ contest, results }: Props) {
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="text-base font-semibold truncate">{contest.name}</h3>
+              <h3 className="text-base font-semibold truncate">{contest.name}（{contest.date}）</h3>
               <PlatformIcon platform={contest.platform} />
               {contest.isTeam && (
                 <Badge variant="secondary" className="text-xs">
@@ -36,7 +36,6 @@ export default function ContestCard({ contest, results }: Props) {
               )}
             </div>
             <div className="mt-1 flex items-center gap-2 text-sm text-muted">
-              <span>{formatDate(contest.date)}</span>
               <Badge variant={contest.type === 'offline' ? 'outline' : 'secondary'} className="text-xs">
                 {contest.type === 'offline' ? '线下' : '线上'}
               </Badge>
