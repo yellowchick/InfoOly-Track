@@ -2,38 +2,19 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Layers } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Search, Layers } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import AdminLayout from '@/components/admin/AdminLayout'
 import DataTable from '@/components/admin/DataTable'
-import ConfirmDialog from '@/components/admin/ConfirmDialog'
-import FormDialog, { type FormField } from '@/components/admin/FormDialog'
 import { levelColor, levelLabel } from '@/lib/utils'
 import type { KnowledgePoint } from '@/types'
-
-const knowledgeFields: FormField[] = [
-  { name: 'name', label: '知识点名称', type: 'input', required: true, placeholder: '输入知识点名称' },
-  { name: 'level', label: '等级', type: 'select', required: true, options: [
-    { value: '3', label: 'CSP-J (3级)' },
-    { value: '4', label: 'GESP 7级 (4级)' },
-    { value: '5', label: 'CSP-S (5级)' },
-    { value: '6', label: 'USACO金 (6级)' },
-    { value: '7', label: '省选 (7级)' },
-  ]},
-  { name: 'levelAlias', label: '等级别名', type: 'input', placeholder: '如: CSP-J' },
-  { name: 'category', label: '分类', type: 'input', required: true, placeholder: '如: 算法, 数据结构' },
-  { name: 'description', label: '描述', type: 'textarea', placeholder: '输入描述', rows: 3 },
-  { name: 'prerequisites', label: '前置知识', type: 'textarea', placeholder: '输入前置知识，用逗号分隔', rows: 2 },
-]
 
 export default function KnowledgePage() {
   const router = useRouter()
   const [knowledgePoints, setKnowledgePoints] = React.useState<KnowledgePoint[]>([])
   const [loading, setLoading] = React.useState(true)
-  const [showForm, setShowForm] = React.useState(false)
-  const [editingPoint, setEditingPoint] = React.useState<KnowledgePoint | null>(null)
-  const [deletingPoint, setDeletingPoint] = React.useState<KnowledgePoint | null>(null)
+  const [searchQuery, setSearchQuery] = React.useState('')
 
   React.useEffect(() => {
     fetchKnowledge()
@@ -43,7 +24,7 @@ export default function KnowledgePage() {
     try {
       const res = await fetch('/api/knowledge', { credentials: 'include' })
       if (res.status === 401) {
-        router.push('/admin/')
+        router.push('/admin/login')
         return
       }
       if (res.ok) {
@@ -57,63 +38,26 @@ export default function KnowledgePage() {
     }
   }
 
-  const handleSubmit = async (values: Record<string, string | number | boolean>) => {
-    try {
-      if (editingPoint) {
-        const res = await fetch('/api/knowledge', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingPoint.id, ...values }),
-          credentials: 'include',
-        })
-        if (res.ok) {
-          setEditingPoint(null)
-          setShowForm(false)
-          fetchKnowledge()
-        }
-      } else {
-        const res = await fetch('/api/knowledge', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(values),
-          credentials: 'include',
-        })
-        if (res.ok) {
-          setShowForm(false)
-          fetchKnowledge()
-        }
-      }
-    } catch (error) {
-      console.error('Error saving knowledge point:', error)
-    }
-  }
-
-  const handleDelete = async () => {
-    if (!deletingPoint) return
-    try {
-      const res = await fetch(`/api/knowledge?id=${deletingPoint.id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      if (res.ok) {
-        setDeletingPoint(null)
-        fetchKnowledge()
-      }
-    } catch (error) {
-      console.error('Error deleting knowledge point:', error)
-    }
-  }
+  const filteredPoints = React.useMemo(() => {
+    if (!searchQuery.trim()) return knowledgePoints
+    const q = searchQuery.toLowerCase()
+    return knowledgePoints.filter((p) =>
+      p.name.toLowerCase().includes(q) ||
+      p.category.toLowerCase().includes(q) ||
+      levelLabel(p.level).toLowerCase().includes(q)
+    )
+  }, [knowledgePoints, searchQuery])
 
   const grouped = React.useMemo(() => {
     const groups = new Map<number, KnowledgePoint[]>()
-    for (const point of knowledgePoints) {
+    for (const point of filteredPoints) {
       if (!groups.has(point.level)) {
         groups.set(point.level, [])
       }
       groups.get(point.level)!.push(point)
     }
     return Array.from(groups.entries()).sort((a, b) => a[0] - b[0])
-  }, [knowledgePoints])
+  }, [filteredPoints])
 
   const columns = [
     {
@@ -150,18 +94,21 @@ export default function KnowledgePage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">知识点管理</h1>
-            <p className="text-sm text-muted">管理知识点体系结构</p>
+            <p className="text-sm text-muted">查看知识点体系结构</p>
           </div>
-          <Button
-            onClick={() => {
-              setEditingPoint(null)
-              setShowForm(true)
-            }}
-            className="gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            新增知识点
-          </Button>
+          <div className="text-sm text-muted">
+            共 {filteredPoints.length} 个知识点
+          </div>
+        </div>
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <Input
+            placeholder="搜索知识点名称、分类..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
 
         {loading ? (
@@ -180,53 +127,15 @@ export default function KnowledgePage() {
                   columns={columns}
                   data={points}
                   keyExtractor={(p) => p.id}
-                  onEdit={(point) => {
-                    setEditingPoint(point)
-                    setShowForm(true)
-                  }}
-                  onDelete={(point) => setDeletingPoint(point)}
                 />
               </div>
             ))}
-            {knowledgePoints.length === 0 && (
+            {filteredPoints.length === 0 && (
               <div className="flex h-64 items-center justify-center">
                 <p className="text-muted">暂无知识点</p>
               </div>
             )}
           </div>
-        )}
-
-        {showForm && (
-          <FormDialog
-            title={editingPoint ? '编辑知识点' : '新增知识点'}
-            fields={knowledgeFields}
-            initialValues={
-              editingPoint
-                ? {
-                    name: editingPoint.name,
-                    level: String(editingPoint.level),
-                    levelAlias: editingPoint.levelAlias,
-                    category: editingPoint.category,
-                    description: editingPoint.description || '',
-                    prerequisites: editingPoint.prerequisites || '',
-                  }
-                : undefined
-            }
-            onSubmit={handleSubmit}
-            onCancel={() => {
-              setShowForm(false)
-              setEditingPoint(null)
-            }}
-          />
-        )}
-
-        {deletingPoint && (
-          <ConfirmDialog
-            title="确认删除"
-            description={`确定要删除知识点 "${deletingPoint.name}" 吗？此操作不可恢复。`}
-            onConfirm={handleDelete}
-            onCancel={() => setDeletingPoint(null)}
-          />
         )}
       </div>
     </AdminLayout>

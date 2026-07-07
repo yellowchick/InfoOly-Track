@@ -10,7 +10,6 @@ import {
   BookOpen,
   CheckSquare,
   Bell,
-  Upload,
   LogOut,
   Menu,
   X,
@@ -19,13 +18,16 @@ import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 const navItems = [
-  { href: '/admin/dashboard/', label: '总览', icon: LayoutDashboard },
+  {
+    href: '/admin/',
+    label: '总览',
+    icon: LayoutDashboard,
+  },
   { href: '/admin/students/', label: '学生', icon: Users },
   { href: '/admin/contests/', label: '比赛', icon: Trophy },
   { href: '/admin/knowledge/', label: '知识点', icon: BookOpen },
   { href: '/admin/tasks/', label: '任务', icon: CheckSquare },
   { href: '/admin/announcements/', label: '公告', icon: Bell },
-  { href: '/admin/import/', label: '导入', icon: Upload },
 ]
 
 export default function AdminLayout({
@@ -40,10 +42,10 @@ export default function AdminLayout({
   const handleLogout = async () => {
     try {
       await fetch('/api/admin/logout', { method: 'POST', credentials: 'include' })
-      router.push('/admin/')
+      router.push('/admin/login')
     } catch (error) {
       console.error('Logout failed:', error)
-      router.push('/admin/')
+      router.push('/admin/login')
     }
   }
 
@@ -56,7 +58,9 @@ export default function AdminLayout({
         </div>
         <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
           {navItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href)
+            const isActive = item.href === '/admin/' 
+              ? (pathname === '/admin/' || pathname === '/admin')
+              : (pathname === item.href || pathname.startsWith(item.href))
             const Icon = item.icon
             return (
               <Link
@@ -101,7 +105,9 @@ export default function AdminLayout({
         {mobileOpen && (
           <nav className="border-b border-border bg-slate-900 px-3 pb-3 text-white max-h-64 overflow-y-auto">
             {navItems.map((item) => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href)
+              const isActive = item.href === '/admin/' 
+              ? (pathname === '/admin/' || pathname === '/admin')
+              : (pathname === item.href || pathname.startsWith(item.href))
               const Icon = item.icon
               return (
                 <Link

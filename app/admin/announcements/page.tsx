@@ -2,38 +2,32 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Eye, EyeOff } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Search, Eye, EyeOff } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import AdminLayout from '@/components/admin/AdminLayout'
 import DataTable from '@/components/admin/DataTable'
-import ConfirmDialog from '@/components/admin/ConfirmDialog'
-import FormDialog, { type FormField } from '@/components/admin/FormDialog'
 import type { Announcement } from '@/types'
 
-const announcementFields: FormField[] = [
-  { name: 'title', label: '标题', type: 'input', required: true, placeholder: '输入公告标题' },
-  { name: 'content', label: '内容', type: 'textarea', required: true, placeholder: '输入公告内容', rows: 4 },
-  { name: 'category', label: '分类', type: 'select', required: true, options: [
-    { value: 'general', label: '一般' },
-    { value: 'contest', label: '比赛' },
-    { value: 'notice', label: '通知' },
-    { value: 'achievement', label: '成绩' },
-  ]},
-  { name: 'date', label: '日期', type: 'input', placeholder: 'YYYY-MM-DD' },
-  { name: 'isPublic', label: '公开', type: 'select', options: [
-    { value: 'true', label: '是' },
-    { value: 'false', label: '否' },
-  ]},
-]
+const categoryLabel: Record<string, string> = {
+  general: '一般',
+  contest: '比赛',
+  notice: '通知',
+  achievement: '成绩',
+}
+
+const categoryVariant: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'destructive'> = {
+  general: 'secondary',
+  contest: 'default',
+  notice: 'warning',
+  achievement: 'success',
+}
 
 export default function AnnouncementsPage() {
   const router = useRouter()
   const [announcements, setAnnouncements] = React.useState<Announcement[]>([])
   const [loading, setLoading] = React.useState(true)
-  const [showForm, setShowForm] = React.useState(false)
-  const [editingAnnouncement, setEditingAnnouncement] = React.useState<Announcement | null>(null)
-  const [deletingAnnouncement, setDeletingAnnouncement] = React.useState<Announcement | null>(null)
+  const [searchQuery, setSearchQuery] = React.useState('')
 
   React.useEffect(() => {
     fetchAnnouncements()
@@ -43,7 +37,7 @@ export default function AnnouncementsPage() {
     try {
       const res = await fetch('/api/announcements', { credentials: 'include' })
       if (res.status === 401) {
-        router.push('/admin/')
+        router.push('/admin/login')
         return
       }
       if (res.ok) {
@@ -57,71 +51,15 @@ export default function AnnouncementsPage() {
     }
   }
 
-  const handleSubmit = async (values: Record<string, string | number | boolean>) => {
-    try {
-      const payload = {
-        ...values,
-        isPublic: values.isPublic === 'true' || values.isPublic === true,
-      }
-
-      if (editingAnnouncement) {
-        const res = await fetch('/api/announcements', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingAnnouncement.id, ...payload }),
-          credentials: 'include',
-        })
-        if (res.ok) {
-          setEditingAnnouncement(null)
-          setShowForm(false)
-          fetchAnnouncements()
-        }
-      } else {
-        const res = await fetch('/api/announcements', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          credentials: 'include',
-        })
-        if (res.ok) {
-          setShowForm(false)
-          fetchAnnouncements()
-        }
-      }
-    } catch (error) {
-      console.error('Error saving announcement:', error)
-    }
-  }
-
-  const handleDelete = async () => {
-    if (!deletingAnnouncement) return
-    try {
-      const res = await fetch(`/api/announcements?id=${deletingAnnouncement.id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      if (res.ok) {
-        setDeletingAnnouncement(null)
-        fetchAnnouncements()
-      }
-    } catch (error) {
-      console.error('Error deleting announcement:', error)
-    }
-  }
-
-  const categoryLabel: Record<string, string> = {
-    general: '一般',
-    contest: '比赛',
-    notice: '通知',
-    achievement: '成绩',
-  }
-
-  const categoryVariant: Record<string, 'default' | 'secondary' | 'success' | 'warning' | 'destructive'> = {
-    general: 'secondary',
-    contest: 'default',
-    notice: 'warning',
-    achievement: 'success',
-  }
+  const filteredAnnouncements = React.useMemo(() => {
+    if (!searchQuery.trim()) return announcements
+    const q = searchQuery.toLowerCase()
+    return announcements.filter((a) =>
+      a.title.toLowerCase().includes(q) ||
+      a.content.toLowerCase().includes(q) ||
+      categoryLabel[a.category]?.toLowerCase().includes(q)
+    )
+  }, [announcements, searchQuery])
 
   const columns = [
     {
@@ -159,18 +97,21 @@ export default function AnnouncementsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">公告管理</h1>
-            <p className="text-sm text-muted">发布公告和通知</p>
+            <p className="text-sm text-muted">查看公告和通知</p>
           </div>
-          <Button
-            onClick={() => {
-              setEditingAnnouncement(null)
-              setShowForm(true)
-            }}
-            className="gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            新增公告
-          </Button>
+          <div className="text-sm text-muted">
+            共 {filteredAnnouncements.length} 条公告
+          </div>
+        </div>
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <Input
+            placeholder="搜索标题、内容..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
 
         {loading ? (
@@ -180,45 +121,8 @@ export default function AnnouncementsPage() {
         ) : (
           <DataTable
             columns={columns}
-            data={announcements}
+            data={filteredAnnouncements}
             keyExtractor={(a) => a.id}
-            onEdit={(item) => {
-              setEditingAnnouncement(item)
-              setShowForm(true)
-            }}
-            onDelete={(item) => setDeletingAnnouncement(item)}
-          />
-        )}
-
-        {showForm && (
-          <FormDialog
-            title={editingAnnouncement ? '编辑公告' : '新增公告'}
-            fields={announcementFields}
-            initialValues={
-              editingAnnouncement
-                ? {
-                    title: editingAnnouncement.title,
-                    content: editingAnnouncement.content,
-                    category: editingAnnouncement.category,
-                    date: editingAnnouncement.date || '',
-                    isPublic: editingAnnouncement.isPublic ? 'true' : 'false',
-                  }
-                : undefined
-            }
-            onSubmit={handleSubmit}
-            onCancel={() => {
-              setShowForm(false)
-              setEditingAnnouncement(null)
-            }}
-          />
-        )}
-
-        {deletingAnnouncement && (
-          <ConfirmDialog
-            title="确认删除"
-            description={`确定要删除公告 "${deletingAnnouncement.title}" 吗？此操作不可恢复。`}
-            onConfirm={handleDelete}
-            onCancel={() => setDeletingAnnouncement(null)}
           />
         )}
       </div>

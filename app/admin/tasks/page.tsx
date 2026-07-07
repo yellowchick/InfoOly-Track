@@ -2,13 +2,11 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, CheckSquare, Square, User } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Search, User, CheckSquare, Square } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import AdminLayout from '@/components/admin/AdminLayout'
 import DataTable from '@/components/admin/DataTable'
-import ConfirmDialog from '@/components/admin/ConfirmDialog'
-import FormDialog, { type FormField } from '@/components/admin/FormDialog'
 import type { Task } from '@/types'
 
 interface TaskWithStudent extends Task {
@@ -18,23 +16,19 @@ interface TaskWithStudent extends Task {
 export default function TasksPage() {
   const router = useRouter()
   const [tasks, setTasks] = React.useState<TaskWithStudent[]>([])
-  const [students, setStudents] = React.useState<{ id: string; name: string }[]>([])
   const [loading, setLoading] = React.useState(true)
-  const [showForm, setShowForm] = React.useState(false)
-  const [editingTask, setEditingTask] = React.useState<TaskWithStudent | null>(null)
-  const [deletingTask, setDeletingTask] = React.useState<TaskWithStudent | null>(null)
-  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set())
+  const [searchQuery, setSearchQuery] = React.useState('')
+  const [categoryFilter, setCategoryFilter] = React.useState('')
 
   React.useEffect(() => {
     fetchTasks()
-    fetchStudents()
   }, [])
 
   const fetchTasks = async () => {
     try {
       const res = await fetch('/api/tasks', { credentials: 'include' })
       if (res.status === 401) {
-        router.push('/admin/')
+        router.push('/admin/login')
         return
       }
       if (res.ok) {
@@ -48,125 +42,26 @@ export default function TasksPage() {
     }
   }
 
-  const fetchStudents = async () => {
-    try {
-      const res = await fetch('/api/students', { credentials: 'include' })
-      if (res.ok) {
-        const data = await res.json()
-        setStudents(data.map((s: { id: string; name: string }) => ({ id: s.id, name: s.name })))
-      }
-    } catch (error) {
-      console.error('Error fetching students:', error)
-    }
-  }
-
-  const taskFields: FormField[] = [
-    { name: 'studentId', label: '学生', type: 'select', required: true, options: students.map(s => ({ value: s.id, label: s.name })) },
-    { name: 'title', label: '任务标题', type: 'input', required: true, placeholder: '输入任务标题' },
-    { name: 'category', label: '分类', type: 'input', placeholder: '如: 算法, 练习' },
-    { name: 'problemIds', label: '题号', type: 'input', placeholder: '如: A, B, C' },
-    { name: 'status', label: '状态', type: 'select', required: true, options: [
-      { value: 'pending', label: '待完成' },
-      { value: 'completed', label: '已完成' },
-      { value: 'in_progress', label: '进行中' },
-    ]},
-    { name: 'priority', label: '优先级', type: 'select', options: [
-      { value: 'low', label: '低' },
-      { value: 'normal', label: '正常' },
-      { value: 'high', label: '高' },
-    ]},
-  ]
-
-  const handleSubmit = async (values: Record<string, string | number | boolean>) => {
-    try {
-      if (editingTask) {
-        const res = await fetch('/api/tasks', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingTask.id, ...values }),
-          credentials: 'include',
-        })
-        if (res.ok) {
-          setEditingTask(null)
-          setShowForm(false)
-          fetchTasks()
-        }
-      } else {
-        const res = await fetch('/api/tasks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(values),
-          credentials: 'include',
-        })
-        if (res.ok) {
-          setShowForm(false)
-          fetchTasks()
-        }
-      }
-    } catch (error) {
-      console.error('Error saving task:', error)
-    }
-  }
-
-  const handleDelete = async () => {
-    if (!deletingTask) return
-    try {
-      const res = await fetch(`/api/tasks?id=${deletingTask.id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      if (res.ok) {
-        setDeletingTask(null)
-        fetchTasks()
-      }
-    } catch (error) {
-      console.error('Error deleting task:', error)
-    }
-  }
-
-  const toggleStatus = async (task: TaskWithStudent) => {
-    const newStatus = task.status === 'completed' ? 'pending' : 'completed'
-    try {
-      const res = await fetch('/api/tasks', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: task.id,
-          status: newStatus,
-          completedAt: newStatus === 'completed' ? new Date().toISOString() : null,
-        }),
-        credentials: 'include',
-      })
-      if (res.ok) {
-        fetchTasks()
-      }
-    } catch (error) {
-      console.error('Error updating task status:', error)
-    }
-  }
-
-  const batchToggleStatus = async (status: string) => {
-    try {
-      await Promise.all(
-        Array.from(selectedIds).map(id =>
-          fetch('/api/tasks', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id, status, completedAt: status === 'completed' ? new Date().toISOString() : null }),
-            credentials: 'include',
-          })
-        )
+  const filteredTasks = React.useMemo(() => {
+    let result = tasks
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      result = result.filter((t) =>
+        t.title.toLowerCase().includes(q) ||
+        t.student?.name.toLowerCase().includes(q) ||
+        t.student?.displayName?.toLowerCase().includes(q)
       )
-      setSelectedIds(new Set())
-      fetchTasks()
-    } catch (error) {
-      console.error('Error batch updating tasks:', error)
     }
-  }
+    if (categoryFilter.trim()) {
+      const c = categoryFilter.toLowerCase()
+      result = result.filter((t) => t.category?.toLowerCase().includes(c))
+    }
+    return result
+  }, [tasks, searchQuery, categoryFilter])
 
   const groupedByStudent = React.useMemo(() => {
     const groups = new Map<string, { student: TaskWithStudent['student']; tasks: TaskWithStudent[] }>()
-    for (const task of tasks) {
+    for (const task of filteredTasks) {
       const studentId = task.studentId
       if (!groups.has(studentId)) {
         groups.set(studentId, { student: task.student, tasks: [] })
@@ -174,7 +69,7 @@ export default function TasksPage() {
       groups.get(studentId)!.tasks.push(task)
     }
     return Array.from(groups.values())
-  }, [tasks])
+  }, [filteredTasks])
 
   const columns = [
     {
@@ -195,13 +90,11 @@ export default function TasksPage() {
       key: 'status',
       title: '状态',
       render: (task: TaskWithStudent) => (
-        <button onClick={() => toggleStatus(task)} className="cursor-pointer">
-          {task.status === 'completed' ? (
-            <Badge variant="success" className="gap-1"><CheckSquare className="h-3 w-3" />已完成</Badge>
-          ) : (
-            <Badge variant="secondary" className="gap-1"><Square className="h-3 w-3" />待完成</Badge>
-          )}
-        </button>
+        task.status === 'completed' ? (
+          <Badge variant="success" className="gap-1"><CheckSquare className="h-3 w-3" />已完成</Badge>
+        ) : (
+          <Badge variant="secondary" className="gap-1"><Square className="h-3 w-3" />待完成</Badge>
+        )
       ),
     },
   ]
@@ -212,29 +105,31 @@ export default function TasksPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">任务管理</h1>
-            <p className="text-sm text-muted">管理学生学习任务</p>
+            <p className="text-sm text-muted">查看学生学习任务</p>
           </div>
-          <Button
-            onClick={() => {
-              setEditingTask(null)
-              setShowForm(true)
-            }}
-            className="gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            新增任务
-          </Button>
+          <div className="text-sm text-muted">
+            共 {filteredTasks.length} 个任务
+          </div>
         </div>
 
-        {selectedIds.size > 0 && (
-          <div className="flex items-center gap-2 rounded-lg bg-muted p-3">
-            <span className="text-sm text-muted">已选择 {selectedIds.size} 项</span>
-            <div className="flex-1" />
-            <Button size="sm" onClick={() => batchToggleStatus('completed')}>标记完成</Button>
-            <Button size="sm" variant="outline" onClick={() => batchToggleStatus('pending')}>标记未完成</Button>
-            <Button size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>取消</Button>
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+            <Input
+              placeholder="搜索任务、学生..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
           </div>
-        )}
+          <div className="relative flex-1">
+            <Input
+              placeholder="按分类筛选..."
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            />
+          </div>
+        </div>
 
         {loading ? (
           <div className="flex h-64 items-center justify-center">
@@ -253,53 +148,15 @@ export default function TasksPage() {
                   columns={columns}
                   data={studentTasks}
                   keyExtractor={(t) => t.id}
-                  onEdit={(task) => {
-                    setEditingTask(task)
-                    setShowForm(true)
-                  }}
-                  onDelete={(task) => setDeletingTask(task)}
                 />
               </div>
             ))}
-            {tasks.length === 0 && (
+            {filteredTasks.length === 0 && (
               <div className="flex h-64 items-center justify-center">
                 <p className="text-muted">暂无任务</p>
               </div>
             )}
           </div>
-        )}
-
-        {showForm && (
-          <FormDialog
-            title={editingTask ? '编辑任务' : '新增任务'}
-            fields={taskFields}
-            initialValues={
-              editingTask
-                ? {
-                    studentId: editingTask.studentId,
-                    title: editingTask.title,
-                    category: editingTask.category || '',
-                    problemIds: editingTask.problemIds || '',
-                    status: editingTask.status,
-                    priority: editingTask.priority || 'normal',
-                  }
-                : undefined
-            }
-            onSubmit={handleSubmit}
-            onCancel={() => {
-              setShowForm(false)
-              setEditingTask(null)
-            }}
-          />
-        )}
-
-        {deletingTask && (
-          <ConfirmDialog
-            title="确认删除"
-            description={`确定要删除任务 "${deletingTask.title}" 吗？此操作不可恢复。`}
-            onConfirm={handleDelete}
-            onCancel={() => setDeletingTask(null)}
-          />
         )}
       </div>
     </AdminLayout>

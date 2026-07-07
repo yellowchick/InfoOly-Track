@@ -58,7 +58,7 @@ export default function AdminDashboardPage() {
       try {
         const res = await fetch('/api/students', { credentials: 'include' })
         if (res.status === 401) {
-          router.push('/admin/')
+          router.push('/admin/login')
           return
         }
         // Try to fetch stats from multiple endpoints

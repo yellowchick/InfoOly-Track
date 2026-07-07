@@ -2,39 +2,19 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Calendar } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import Link from 'next/link'
+import { Calendar, Search } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import AdminLayout from '@/components/admin/AdminLayout'
 import DataTable from '@/components/admin/DataTable'
-import ConfirmDialog from '@/components/admin/ConfirmDialog'
-import FormDialog, { type FormField } from '@/components/admin/FormDialog'
 import type { Contest } from '@/types'
-
-const contestFields: FormField[] = [
-  { name: 'name', label: '比赛名称', type: 'input', required: true, placeholder: '输入比赛名称' },
-  { name: 'type', label: '类型', type: 'select', required: true, options: [
-    { value: 'offline', label: '线下' },
-    { value: 'online', label: '线上' },
-  ]},
-  { name: 'platform', label: '平台', type: 'input', placeholder: '如: AtCoder, Codeforces' },
-  { name: 'date', label: '日期', type: 'input', required: true, placeholder: 'YYYY-MM' },
-  { name: 'description', label: '描述', type: 'textarea', placeholder: '输入描述', rows: 3 },
-  { name: 'totalScore', label: '总分', type: 'number', placeholder: '0' },
-  { name: 'timeLimit', label: '时间限制', type: 'input', placeholder: '如: 3小时' },
-  { name: 'isTeam', label: '团队赛', type: 'select', options: [
-    { value: 'false', label: '否' },
-    { value: 'true', label: '是' },
-  ]},
-]
 
 export default function ContestsPage() {
   const router = useRouter()
   const [contests, setContests] = React.useState<Contest[]>([])
   const [loading, setLoading] = React.useState(true)
-  const [showForm, setShowForm] = React.useState(false)
-  const [editingContest, setEditingContest] = React.useState<Contest | null>(null)
-  const [deletingContest, setDeletingContest] = React.useState<Contest | null>(null)
+  const [searchQuery, setSearchQuery] = React.useState('')
 
   React.useEffect(() => {
     fetchContests()
@@ -44,7 +24,7 @@ export default function ContestsPage() {
     try {
       const res = await fetch('/api/contests', { credentials: 'include' })
       if (res.status === 401) {
-        router.push('/admin/')
+        router.push('/admin/login')
         return
       }
       if (res.ok) {
@@ -58,65 +38,24 @@ export default function ContestsPage() {
     }
   }
 
-  const handleSubmit = async (values: Record<string, string | number | boolean>) => {
-    try {
-      const payload = {
-        ...values,
-        isTeam: values.isTeam === 'true' || values.isTeam === true,
-        totalScore: values.totalScore ? Number(values.totalScore) : undefined,
-      }
-
-      if (editingContest) {
-        const res = await fetch('/api/contests', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingContest.id, ...payload }),
-          credentials: 'include',
-        })
-        if (res.ok) {
-          setEditingContest(null)
-          setShowForm(false)
-          fetchContests()
-        }
-      } else {
-        const res = await fetch('/api/contests', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          credentials: 'include',
-        })
-        if (res.ok) {
-          setShowForm(false)
-          fetchContests()
-        }
-      }
-    } catch (error) {
-      console.error('Error saving contest:', error)
-    }
-  }
-
-  const handleDelete = async () => {
-    if (!deletingContest) return
-    try {
-      const res = await fetch(`/api/contests?id=${deletingContest.id}`, {
-        method: 'DELETE',
-        credentials: 'include',
-      })
-      if (res.ok) {
-        setDeletingContest(null)
-        fetchContests()
-      }
-    } catch (error) {
-      console.error('Error deleting contest:', error)
-    }
-  }
+  const filteredContests = React.useMemo(() => {
+    if (!searchQuery.trim()) return contests
+    const q = searchQuery.toLowerCase()
+    return contests.filter((c) =>
+      c.name.toLowerCase().includes(q) ||
+      c.platform?.toLowerCase().includes(q) ||
+      c.date.includes(q)
+    )
+  }, [contests, searchQuery])
 
   const columns = [
     {
       key: 'name',
       title: '比赛名称',
       render: (contest: Contest) => (
-        <div className="font-medium">{contest.name}</div>
+        <Link href={`/contests/${contest.id}`} className="font-medium hover:underline text-primary">
+          {contest.name}
+        </Link>
       ),
     },
     {
@@ -153,18 +92,21 @@ export default function ContestsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">比赛管理</h1>
-            <p className="text-sm text-muted">管理比赛信息和安排</p>
+            <p className="text-sm text-muted">查看比赛信息和安排</p>
           </div>
-          <Button
-            onClick={() => {
-              setEditingContest(null)
-              setShowForm(true)
-            }}
-            className="gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            新增比赛
-          </Button>
+          <div className="text-sm text-muted">
+            共 {filteredContests.length} 场比赛
+          </div>
+        </div>
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
+          <Input
+            placeholder="搜索比赛名称、平台..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
 
         {loading ? (
@@ -174,48 +116,8 @@ export default function ContestsPage() {
         ) : (
           <DataTable
             columns={columns}
-            data={contests}
+            data={filteredContests}
             keyExtractor={(c) => c.id}
-            onEdit={(contest) => {
-              setEditingContest(contest)
-              setShowForm(true)
-            }}
-            onDelete={(contest) => setDeletingContest(contest)}
-          />
-        )}
-
-        {showForm && (
-          <FormDialog
-            title={editingContest ? '编辑比赛' : '新增比赛'}
-            fields={contestFields}
-            initialValues={
-              editingContest
-                ? {
-                    name: editingContest.name,
-                    type: editingContest.type,
-                    platform: editingContest.platform || '',
-                    date: editingContest.date,
-                    description: editingContest.description || '',
-                    totalScore: editingContest.totalScore || 0,
-                    timeLimit: editingContest.timeLimit || '',
-                    isTeam: editingContest.isTeam ? 'true' : 'false',
-                  }
-                : undefined
-            }
-            onSubmit={handleSubmit}
-            onCancel={() => {
-              setShowForm(false)
-              setEditingContest(null)
-            }}
-          />
-        )}
-
-        {deletingContest && (
-          <ConfirmDialog
-            title="确认删除"
-            description={`确定要删除比赛 "${deletingContest.name}" 吗？此操作不可恢复。`}
-            onConfirm={handleDelete}
-            onCancel={() => setDeletingContest(null)}
           />
         )}
       </div>
