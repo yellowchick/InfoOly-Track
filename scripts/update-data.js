@@ -6,7 +6,7 @@ const path = require('path');
 const stats = {
   contests: { created: 0, reused: 0 },
   results: { created: 0, updated: 0, skipped: 0 },
-  tasks: { updated: 0, skipped: 0, notFound: 0 },
+  tasks: { created: 0, updated: 0, skipped: 0, notFound: 0 },
   errors: []
 };
 
@@ -300,9 +300,19 @@ async function processTasks(data, prisma) {
       });
 
       if (!existingTask) {
-        log(`  [跳过] 任务不存在: ${studentData.name} - ${task.title}`);
-        stats.tasks.notFound++;
-        stats.errors.push(`任务不存在: ${studentData.name} - ${task.title}`);
+        // 任务不存在，创建新任务并标记为完成
+        await prisma.task.create({
+          data: {
+            studentId: student.id,
+            title: task.title,
+            status: 'completed',
+            completedAt: new Date(),
+            priority: 'normal',
+            category: 'CSP'
+          }
+        });
+        log(`  [创建] 新任务并标记完成: ${studentData.name} - ${task.title}`);
+        stats.tasks.created++;
         continue;
       }
 
@@ -330,7 +340,7 @@ function printStats() {
   log('========================================');
   log(`比赛: 创建 ${stats.contests.created} 个, 复用 ${stats.contests.reused} 个`);
   log(`成绩: 创建 ${stats.results.created} 个, 更新 ${stats.results.updated} 个, 跳过 ${stats.results.skipped} 个`);
-  log(`任务: 更新 ${stats.tasks.updated} 个, 跳过 ${stats.tasks.skipped} 个, 未找到 ${stats.tasks.notFound} 个`);
+  log(`任务: 创建 ${stats.tasks.created} 个, 更新 ${stats.tasks.updated} 个, 跳过 ${stats.tasks.skipped} 个, 未找到 ${stats.tasks.notFound} 个`);
   if (stats.errors.length > 0) {
     log(`\n警告/错误 (${stats.errors.length}):`);
     stats.errors.forEach(e => log(`  - ${e}`));
