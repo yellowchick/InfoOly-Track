@@ -200,6 +200,10 @@ export function getStudentById(id: string): StudentProfile | undefined {
   return studentsSeedData.find(s => s.id === id)
 }
 
+export function getStudentByName(name: string): StudentProfile | undefined {
+  return studentsSeedData.find(s => s.name === name || s.displayName === name)
+}
+
 export function getStudentStats(student: StudentProfile) {
   const totalTasks = student.tasks.length
   const completedTasks = student.tasks.filter(t => t.status === 'completed').length
@@ -239,36 +243,12 @@ export function getTimelineItems(student: StudentProfile) {
       title: cr.contest?.name || '未知比赛',
       description: cr.contest?.description || '',
       badge: cr.award || (cr.score !== undefined ? `得分: ${cr.score}` : undefined),
-      status: 'completed',
-    })),
-    ...student.knowledges.map(sk => ({
-      id: `knowledge-${sk.id}`,
-      date: sk.certifiedAt,
-      type: 'knowledge' as const,
-      title: sk.knowledgePoint?.name || '未知知识点',
-      description: sk.knowledgePoint?.category || '',
-      badge: sk.knowledgePoint?.levelAlias,
-      status: 'certified',
-    })),
-    ...student.tasks.map(t => ({
-      id: `task-${t.id}`,
-      date: t.completedAt || t.dueDate || '',
-      type: 'task' as const,
-      title: t.title,
-      description: t.category || '',
-      badge: t.status === 'completed' ? '已完成' : '进行中',
-      status: t.status,
+      status: 'completed' as const,
     })),
   ].filter(item => item.date)
 
   items.sort((a, b) => {
-    const normalizeDate = (d: string) => {
-      if (d.length === 6) return `${d.slice(0, 4)}-${d.slice(4, 6)}`
-      return d
-    }
-    const dateA = normalizeDate(a.date)
-    const dateB = normalizeDate(b.date)
-    return dateB.localeCompare(dateA)
+    return b.date.localeCompare(a.date)
   })
 
   return items

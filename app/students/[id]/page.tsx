@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { StudentDetailTabs } from '@/components/student/StudentDetailTabs'
 import { prisma } from '@/lib/prisma'
-import { getStudentById, studentsSeedData } from '@/lib/student-data'
+import { getStudentById, getStudentByName } from '@/lib/student-data'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -11,10 +11,14 @@ interface PageProps {
   params: { id: string }
 }
 
-export function generateStaticParams() {
-  return studentsSeedData.map((student) => ({
-    id: student.id,
-  }))
+export async function generateStaticParams() {
+  // 从数据库获取实际学生ID
+  try {
+    const students = await prisma.student.findMany({ select: { id: true } })
+    return students.map((s) => ({ id: s.id }))
+  } catch {
+    return []
+  }
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -27,7 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   } catch { /* ignore */ }
 
   if (!student) {
-    const fallback = getStudentById(params.id)
+    const fallback = getStudentById(params.id) || getStudentByName(params.id)
     if (!fallback) return { title: '学生未找到' }
     return {
       title: `${fallback.name} - 学生详情`,
@@ -109,7 +113,7 @@ export default async function StudentDetailPage({ params }: PageProps) {
   }
 
   if (!student) {
-    student = getStudentById(params.id)
+    student = getStudentById(params.id) || getStudentByName(params.id)
   }
 
   if (!student) {
