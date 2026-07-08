@@ -76,14 +76,14 @@ export function Header() {
           </button>
         </div>
 
-        {/* 导航列表 */}
-        <nav className="flex flex-col p-2">
+        {/* 导航列表 - 白色卡片 */}
+        <nav className="flex flex-col gap-2 p-3">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               onClick={() => setIsOpen(false)}
-              className="flex h-12 items-center rounded-lg px-4 text-base font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-primary"
+              className="flex h-12 items-center rounded-lg bg-white border border-gray-200 px-4 text-base font-medium text-gray-700 shadow-sm transition-colors hover:bg-primary/5 hover:text-primary hover:border-primary/20 active:scale-[0.98]"
             >
               {item.label}
             </Link>
