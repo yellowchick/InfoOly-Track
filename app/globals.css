@@ -34,6 +34,7 @@
     @apply text-foreground;
     -webkit-tap-highlight-color: transparent;
     overscroll-behavior-y: none;
+    overflow-x: hidden;
   }
 
   /* WeChat / WebView Fixes */

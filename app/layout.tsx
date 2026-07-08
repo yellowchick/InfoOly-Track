@@ -27,7 +27,7 @@ export default function RootLayout({
     <html lang="zh-CN">
       <body className="min-h-screen bg-gray-100 text-foreground antialiased">
         <Providers>
-          <div className="max-w-md mx-auto min-h-screen bg-background shadow-2xl relative isolate">
+          <div className="max-w-md mx-auto min-h-screen bg-background shadow-2xl relative isolate overflow-x-hidden">
             {children}
             <BottomNav />
             <ScrollToTop />

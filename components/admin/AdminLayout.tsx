@@ -50,7 +50,7 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex min-h-screen bg-background">
+    <div className="fixed inset-0 z-[60] flex min-h-screen bg-background overflow-x-hidden">
       {/* Desktop Sidebar */}
       <aside className="hidden w-64 flex-col bg-slate-900 text-white md:flex">
         <div className="flex h-16 items-center px-6">
@@ -136,7 +136,7 @@ export default function AdminLayout({
             </Button>
           </nav>
         )}
-        <main className="flex-1 overflow-y-auto p-4">{children}</main>
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4">{children}</main>
       </div>
 
       {/* Desktop Content */}
