@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { StatCard } from '@/components/home/StatCard'
-import { ScheduleCard } from '@/components/home/ScheduleCard'
+import { TrainingCalendar } from '@/components/home/TrainingCalendar'
 import { LinkGrid } from '@/components/home/LinkGrid'
 import type { Announcement, Schedule, ExternalLink } from '@/types'
 
@@ -56,7 +56,7 @@ async function getHomeData() {
       }),
       prisma.schedule.findMany({
         where: { isActive: true },
-        orderBy: { id: 'asc' },
+        orderBy: { day: 'asc' },
       }),
       prisma.externalLink.findMany({
         orderBy: { sortOrder: 'asc' },
@@ -138,17 +138,7 @@ export default async function HomePage() {
         {/* Schedule */}
         <section className="mt-6">
           <h2 className="text-lg font-bold text-foreground mb-3">📅 训练安排</h2>
-          <div className="flex flex-col gap-3">
-            {schedules.map((s) => (
-              <ScheduleCard
-                key={s.id}
-                day={s.day}
-                startTime={s.startTime}
-                endTime={s.endTime}
-                note={s.note || undefined}
-              />
-            ))}
-          </div>
+          <TrainingCalendar schedules={schedules} month={7} year={2026} />
         </section>
 
         {/* Links */}
