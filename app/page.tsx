@@ -43,6 +43,32 @@ const fallbackLinks: ExternalLink[] = [
   { id: 'l4', name: 'AtCoder', url: 'https://atcoder.jp/', category: 'platform', icon: '⚡', sortOrder: 4 },
 ]
 
+// 提取公告摘要
+function getAnnouncementSummary(content: string): string {
+  if (content.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(content)
+      return parsed.summary || ''
+    } catch {
+      return content
+    }
+  }
+  return content
+}
+
+// 提取学生数量
+function getStudentCount(content: string): number {
+  if (content.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(content)
+      return parsed.students?.length || 0
+    } catch {
+      return 0
+    }
+  }
+  return 0
+}
+
 async function getHomeData() {
   try {
     const [studentCount, contestCount, knowledgeCount, taskCount, announcements, schedules, links] = await Promise.all([
@@ -132,12 +158,17 @@ export default async function HomePage() {
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
                           最新
                         </span>
+                        {getStudentCount(announcements[0].content) > 0 && (
+                          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-blue-600 text-xs">
+                            {getStudentCount(announcements[0].content)}位学生
+                          </span>
+                        )}
                       </div>
                       <h3 className="text-base font-semibold text-foreground truncate">
                         {announcements[0].title}
                       </h3>
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                        {announcements[0].content.slice(0, 80)}...
+                        {getAnnouncementSummary(announcements[0].content).slice(0, 80)}...
                       </p>
                     </div>
                     <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0 group-hover:text-foreground transition-colors" />
