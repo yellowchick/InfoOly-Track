@@ -20,7 +20,7 @@ function serializeKnowledgePoint(kp: any) {
       ...sk,
       createdAt: sk.createdAt?.toISOString(),
       updatedAt: sk.updatedAt?.toISOString(),
-      certifiedAt: sk.certifiedAt?.toISOString() ?? undefined,
+      certifiedAt: sk.certifiedAt ?? undefined,
       student: sk.student
         ? {
             ...sk.student,
