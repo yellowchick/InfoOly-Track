@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Metadata } from 'next'
+import { Calendar, ChevronRight } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -111,28 +112,42 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Announcements */}
+        {/* Announcements - 只显示最近一条 */}
         <section className="mt-6">
-          <h2 className="text-lg font-bold text-foreground mb-3">📢 家校专栏</h2>
-          <div className="flex flex-col gap-3">
-            {announcements.length > 0 ? (
-              announcements.map((a) => (
-                <Card key={a.id} className="border-border/60">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-semibold text-foreground">{a.title}</h3>
-                      {a.date && (
-                        <span className="text-xs text-muted">{a.date}</span>
-                      )}
-                    </div>
-                    <p className="text-sm text-muted mt-1">{a.content}</p>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <p className="text-sm text-muted">暂无公告</p>
-            )}
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold text-foreground">📢 家校专栏</h2>
+            <Link href="/announcements/" className="text-xs text-primary hover:underline">
+              查看全部 →
+            </Link>
           </div>
+          {announcements.length > 0 ? (
+            <Link href={`/announcements/${announcements[0].id}/`}>
+              <Card className="border-border/60 hover:bg-accent/30 transition-colors cursor-pointer group">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>{announcements[0].date || '近期'}</span>
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
+                          最新
+                        </span>
+                      </div>
+                      <h3 className="text-base font-semibold text-foreground truncate">
+                        {announcements[0].title}
+                      </h3>
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {announcements[0].content.slice(0, 80)}...
+                      </p>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0 group-hover:text-foreground transition-colors" />
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          ) : (
+            <p className="text-sm text-muted">暂无公告</p>
+          )}
         </section>
 
         {/* Schedule */}
