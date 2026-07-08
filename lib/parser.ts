@@ -117,7 +117,7 @@ export function parseMarkdown(content: string): ParsedData {
       i = parseContests(lines, i + 1, result)
     } else if (line === '### 难度分级') {
       i = parseKnowledgePoints(lines, i + 1, result)
-    } else if (line === '### 家校专栏') {
+    } else if (line === '### 最新资讯') {
       i = parseAnnouncements(lines, i + 1, result)
     } else if (line === '### 现阶段时间安排') {
       i = parseSchedules(lines, i + 1, result)

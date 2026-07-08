@@ -8,8 +8,8 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export const metadata: Metadata = {
-  title: '家校专栏 - InfoOly Track',
-  description: '查看所有家校专栏和历史记录',
+  title: '最新资讯 - InfoOly Track',
+  description: '查看所有最新资讯和历史记录',
 }
 
 // 提取摘要
@@ -61,7 +61,7 @@ export default async function AnnouncementsListPage() {
           返回首页
         </Link>
 
-        <h1 className="text-2xl font-bold text-foreground mb-2">📢 家校专栏</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-2">📢 最新资讯</h1>
         <p className="text-sm text-muted-foreground mb-6">共 {announcements.length} 条记录</p>
 
         <div className="flex flex-col gap-3">

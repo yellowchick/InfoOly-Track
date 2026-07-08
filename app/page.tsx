@@ -141,7 +141,7 @@ export default async function HomePage() {
         {/* Announcements - 只显示最近一条 */}
         <section className="mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-foreground">📢 家校专栏</h2>
+            <h2 className="text-lg font-bold text-foreground">📢 最新资讯</h2>
             <Link href="/announcements/" className="text-xs text-primary hover:underline">
               查看全部 →
             </Link>

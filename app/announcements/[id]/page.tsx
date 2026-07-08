@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const announcement = await getAnnouncement(params.id)
   if (!announcement) return { title: '内容未找到' }
   return {
-    title: `${announcement.title} - 家校专栏`,
+    title: `${announcement.title} - 最新资讯`,
     description: typeof announcement.content === 'string' && announcement.content.startsWith('{') 
       ? JSON.parse(announcement.content).summary?.slice(0, 100) 
       : announcement.content.slice(0, 100),
@@ -88,7 +88,7 @@ export default async function AnnouncementDetailPage({ params }: PageProps) {
             <Calendar className="h-3.5 w-3.5" />
             <span>{announcement.date || '近期'}</span>
             <span className="rounded-full bg-primary/10 px-2 py-0.5 text-primary">
-              家校专栏
+              最新资讯
             </span>
           </div>
           <h1 className="text-xl font-bold text-foreground">{announcement.title}</h1>
@@ -164,7 +164,7 @@ export default async function AnnouncementDetailPage({ params }: PageProps) {
         <div className="mt-8 pt-4 border-t border-border">
           <Link href="/announcements/">
             <span className="text-sm text-primary hover:underline">
-              查看所有家校专栏 →
+              查看所有最新资讯 →
             </span>
           </Link>
         </div>
