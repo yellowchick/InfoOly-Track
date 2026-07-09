@@ -1,0 +1,53 @@
+#!/bin/sh
+# InfoOly Track - Git pre-commit hook
+# 当修改 deploy/ 目录下的配置文件时，提醒运行验证脚本
+
+# 获取本次提交中涉及 deploy/ 目录的文件列表
+DEPLOY_FILES=$(git diff --cached --name-only | grep "^deploy/" || true)
+
+if [ -n "$DEPLOY_FILES" ]; then
+    echo ""
+    echo "=========================================="
+    echo "  ⚠️  检测到 deploy/ 目录文件变更"
+    echo "=========================================="
+    echo ""
+    echo "  变更文件:"
+    for f in $DEPLOY_FILES; do
+        echo "    - $f"
+    done
+    echo ""
+    echo "  建议操作:"
+    echo "    1. 在本地运行验证脚本确认配置无误:"
+    echo "       bash deploy/verify.sh"
+    echo ""
+    echo "    2. 确认 PM2 配置中的 cwd 路径与服务器实际路径一致"
+    echo "       (当前服务器路径: /root/InfoOly-Track)"
+    echo ""
+    echo "    3. 提交后同步到服务器并再次运行验证:"
+    echo "       ssh infoly-server 'cd /root/InfoOly-Track && git pull && bash deploy/verify.sh'"
+    echo ""
+    echo "=========================================="
+    echo ""
+
+    # 询问是否继续提交（交互式）
+    # 在非交互环境（如 CI）中自动通过
+    if [ -t 1 ]; then
+        printf "  是否继续提交? [Y/n] "
+        read -r response
+        case "$response" in
+            [Nn]*)
+                echo ""
+                echo "  提交已取消。请运行验证脚本后再提交。"
+                echo ""
+                exit 1
+                ;;
+            *)
+                echo ""
+                echo "  继续提交..."
+                echo ""
+                ;;
+        esac
+    fi
+fi
+
+exit 0
