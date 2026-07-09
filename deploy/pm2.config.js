@@ -13,7 +13,7 @@ module.exports = {
       args: 'start',
       interpreter: '/usr/bin/node',
       // 部署目录，请根据实际路径修改
-      cwd: '/var/www/info-oly-track',
+      cwd: '/root/InfoOly-Track',
 
       // SQLite 为文件级锁，不支持多进程并发写入，因此只能单实例
       instances: 1,
