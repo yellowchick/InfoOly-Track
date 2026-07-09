@@ -168,6 +168,7 @@ node scripts/update-data.js your-file.md
 5. 配置 `deploy/nginx.conf` 到 `/etc/nginx/sites-available/`
 6. 配置 SSL：`certbot --nginx -d your-domain.com`
 7. PM2 启动：`pm2 start deploy/pm2.config.js`
+8. **部署验证：** `bash deploy/verify.sh`（每次代码同步后执行，检查配置完整性和应用健康状态）
 
 ### Docker 部署（可选）
 
@@ -191,6 +192,12 @@ docker run -p 3000:3000 info-oly-track
 | ExternalLink | 关联网站 |
 
 ## 常见问题
+
+**Q: 部署后应用无法启动，PM2 显示 PID 为 N/A？**
+A: 运行 `bash deploy/verify.sh` 进行诊断。常见原因：
+- `deploy/pm2.config.js` 被清空或 `cwd` 路径错误
+- 端口 3000 被占用
+- 依赖未安装或 Prisma Client 未生成
 
 **Q: 构建时出现 "Prisma Client 未找到"？**
 A: 运行 `npx prisma generate` 生成 Prisma Client。
