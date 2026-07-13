@@ -2,6 +2,7 @@ import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Calendar, User, Tag } from 'lucide-react'
+import { MarkdownRenderer } from '@/components/ui/MarkdownRenderer'
 import { prisma } from '@/lib/prisma'
 import { fallbackAnnouncements } from '@/lib/fallback-data'
 
@@ -152,12 +153,8 @@ export default async function AnnouncementDetailPage({ params }: PageProps) {
             </div>
           </>
         ) : (
-          /* 非结构化内容（兼容旧数据） */
-          <article className="prose prose-sm max-w-none text-foreground">
-            <div className="whitespace-pre-wrap text-sm leading-relaxed">
-              {summary}
-            </div>
-          </article>
+          /* Markdown 内容渲染 */
+          <MarkdownRenderer content={summary} />
         )}
 
         {/* 底部导航 */}
