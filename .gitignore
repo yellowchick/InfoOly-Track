@@ -43,3 +43,16 @@ npm-debug.log*
 
 # 测试覆盖率
 coverage/
+
+# Agent 同步文档（不推送到 GitHub）
+SYNC.md
+
+logs/
+*.log
+npm-debug.log*
+
+# 类型定义缓存
+*.tsbuildinfo
+
+# 测试覆盖率
+coverage/
