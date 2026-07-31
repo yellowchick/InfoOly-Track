@@ -167,8 +167,8 @@ export default async function HomePage() {
                       <h3 className="text-base font-semibold text-foreground truncate">
                         {announcements[0].title}
                       </h3>
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                        {getAnnouncementSummary(announcements[0].content).slice(0, 80)}...
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-3">
+                        {getAnnouncementSummary(announcements[0].content).slice(0, 150)}...
                       </p>
                     </div>
                     <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0 group-hover:text-foreground transition-colors" />
@@ -184,7 +184,7 @@ export default async function HomePage() {
         {/* Schedule */}
         <section className="mt-6">
           <h2 className="text-lg font-bold text-foreground mb-3">📅 训练安排</h2>
-          <TrainingCalendar schedules={schedules} month={7} year={2026} />
+          <TrainingCalendar schedules={schedules} month={8} year={2026} />
         </section>
 
         {/* Links */}
