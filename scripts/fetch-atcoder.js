@@ -132,9 +132,9 @@ async function main() {
     }
   }
 
-  // 第一步：按学生查询提交记录，检测参赛情况 + 计算得分
+  // 第一步：按学生查询提交记录，检测参赛情况（先收集原始AC提交，步骤2再按时间窗口过滤算分）
   console.log('\n--- 步骤1: 查询学生提交记录 ---');
-  const participations = new Map(); // contestId -> Map<studentId, {score, submissions}>
+  const participations = new Map(); // contestId -> Map<studentId, {student, acSubs: [{problem_id, point, epoch_second}]}>
   const nowSec = Math.floor(Date.now() / 1000);
 
   for (const s of students) {
@@ -145,17 +145,17 @@ async function main() {
     for (const sub of subs) {
       const m = sub.contest_id && sub.contest_id.match(/^abc(\d+)$/i);
       if (!m) continue;
-      if (!byContest.has(sub.contest_id)) byContest.set(sub.contest_id, new Map());
-      const probs = byContest.get(sub.contest_id);
-      // ABC 非部分分：每题取最高 AC 分数
-      if (sub.result === 'AC') {
-        probs.set(sub.problem_id, Math.max(probs.get(sub.problem_id) || 0, sub.point));
-      }
+      if (sub.result !== 'AC') continue; // 只记录AC，算分时按题目去重取最高分
+      if (!byContest.has(sub.contest_id)) byContest.set(sub.contest_id, []);
+      byContest.get(sub.contest_id).push({
+        problem_id: sub.problem_id,
+        point: sub.point,
+        epoch_second: sub.epoch_second,
+      });
     }
-    for (const [cid, probs] of byContest) {
-      const score = Math.round([...probs.values()].reduce((a, b) => a + b, 0));
+    for (const [cid, acSubs] of byContest) {
       if (!participations.has(cid)) participations.set(cid, new Map());
-      participations.get(cid).set(s.id, { student: s, score, acCount: probs.size });
+      participations.get(cid).set(s.id, { student: s, acSubs });
     }
     console.log(`  ✅ ${s.name}: ${byContest.size} 场 ABC 有提交`);
     await sleep(800);
@@ -210,6 +210,16 @@ async function main() {
     const contestId = contest ? contest.id : '(dry-run)';
 
     for (const [, p] of results) {
+      // 按比赛时间窗口过滤提交：赛后练习/虚拟参赛的提交不计入成绩
+      const endMs = endTime ? endTime.getTime() : Infinity;
+      const validAC = new Map();
+      for (const sub of p.acSubs) {
+        if (sub.epoch_second * 1000 > endMs) continue;
+        validAC.set(sub.problem_id, Math.max(validAC.get(sub.problem_id) || 0, sub.point));
+      }
+      const score = Math.round([...validAC.values()].reduce((a, b) => a + b, 0));
+      const acCount = validAC.size;
+
       const official = byHandle.get(p.student.atcoderId.toLowerCase());
       const rank = official ? official.Place : null;
       const atcoderRank = official ? official.AtCoderRank : null;
@@ -220,7 +230,7 @@ async function main() {
         where: { studentId: p.student.id, contestId: contest.id },
       }) : null;
 
-      const dataStr = `得分${p.score}(${p.acCount}题)` + (rank ? `, 排名${rank}` : '') + (rating != null ? `, Rating ${rating}` : '') + (atcoderRank ? `, Rank ${atcoderRank}` : '') + (isRated === false ? ' [unrated]' : '');
+      const dataStr = `得分${score}(${acCount}题)` + (rank ? `, 排名${rank}` : '') + (rating != null ? `, Rating ${rating}` : '') + (atcoderRank ? `, Rank ${atcoderRank}` : '') + (isRated === false ? ' [unrated]' : '');
 
       if (existing && !UPDATE) {
         console.log(`  📋 ${p.student.name}: 已有成绩（${dataStr}），跳过`);
@@ -228,7 +238,7 @@ async function main() {
       }
 
       const data = {
-        score: p.score,
+        score,
         rank,
         atcoderRank,
         atcoderRating: rating,
