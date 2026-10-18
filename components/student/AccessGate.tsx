@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Lock, Eye, EyeOff } from 'lucide-react'
 import {
-  verifyAccessCode,
   saveAccess,
   loadAccess,
   clearAccess,
@@ -14,11 +13,27 @@ import {
 } from '@/lib/student-access'
 
 interface AccessGateProps {
+  studentId: string
   studentName: string
   children: React.ReactNode
 }
 
-export function AccessGate({ studentName, children }: AccessGateProps) {
+async function verifyCode(studentId: string, code: string): Promise<'admin' | 'student' | null> {
+  try {
+    const res = await fetch('/api/students/verify-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, code }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.role === 'admin' || data.role === 'student' ? data.role : null
+  } catch {
+    return null
+  }
+}
+
+export function AccessGate({ studentId, studentName, children }: AccessGateProps) {
   const [access, setAccess] = useState<AccessState | null>(null)
   const [checked, setChecked] = useState(false)
   const [code, setCode] = useState('')
@@ -28,17 +43,20 @@ export function AccessGate({ studentName, children }: AccessGateProps) {
 
   useEffect(() => {
     const saved = loadAccess()
-    if (saved) {
-      // 校验已保存的代码对当前学生仍有效
-      const role = verifyAccessCode(saved.code, studentName)
+    if (!saved) {
+      setChecked(true)
+      return
+    }
+    // 校验已保存的代码对当前学生仍有效（以服务端为准）
+    verifyCode(studentId, saved.code).then((role) => {
       if (role) {
         setAccess({ role, code: saved.code })
       } else {
         clearAccess()
       }
-    }
-    setChecked(true)
-  }, [studentName])
+      setChecked(true)
+    })
+  }, [studentId])
 
   if (!checked) {
     return (
@@ -66,9 +84,9 @@ export function AccessGate({ studentName, children }: AccessGateProps) {
     )
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const role = verifyAccessCode(code, studentName)
+    const role = await verifyCode(studentId, code)
     if (!role) {
       setError('代码不正确，请重试')
       return
@@ -108,7 +126,7 @@ export function AccessGate({ studentName, children }: AccessGateProps) {
             <div className="relative">
               <Input
                 type={showCode ? 'text' : 'password'}
-                placeholder="访问代码（姓名全拼或管理员代码）"
+                placeholder="访问代码"
                 value={code}
                 onChange={(e) => { setCode(e.target.value); setError('') }}
                 autoFocus
@@ -133,9 +151,6 @@ export function AccessGate({ studentName, children }: AccessGateProps) {
               </Button>
             )}
           </form>
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            学生代码默认为姓名全拼，管理员代码可查看所有学生
-          </p>
         </CardContent>
       </Card>
     </div>

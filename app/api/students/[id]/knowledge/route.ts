@@ -4,11 +4,11 @@
  * POST /api/students/[id]/knowledge
  * Body: { knowledgePointId, action: 'certify' | 'uncertify', code }
  *
- * 验证：code 必须是该学生的姓名全拼 或 管理员代码
+ * 验证：code 必须是该学生的访问代码（数据库 accessCode）或 管理员代码
  */
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { verifyAccessCode, getStudentCode } from '@/lib/student-access'
+import { verifyStudentAccess } from '@/lib/student-access'
 
 interface RouteParams {
   params: { id: string }
@@ -18,7 +18,7 @@ export async function POST(request: Request, { params }: RouteParams) {
   try {
     const student = await prisma.student.findUnique({
       where: { id: params.id },
-      select: { id: true, name: true },
+      select: { id: true, name: true, accessCode: true },
     })
     if (!student) {
       return NextResponse.json({ error: '学生不存在' }, { status: 404 })
@@ -34,8 +34,8 @@ export async function POST(request: Request, { params }: RouteParams) {
       return NextResponse.json({ error: 'action 必须是 certify 或 uncertify' }, { status: 400 })
     }
 
-    // 验证访问代码：管理员 或 该学生本人的全拼代码
-    const role = verifyAccessCode(String(code), student.name)
+    // 验证访问代码：管理员 或 该学生本人的访问代码
+    const role = await verifyStudentAccess(String(code), student)
     if (!role) {
       return NextResponse.json({ error: '访问代码不正确' }, { status: 403 })
     }
@@ -85,22 +85,3 @@ export async function POST(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: '操作失败' }, { status: 500 })
   }
 }
-
-// 提供给前端的代码提示（学生全拼，便于前端展示输入提示）
-export async function GET(request: Request, { params }: RouteParams) {
-  try {
-    const student = await prisma.student.findUnique({
-      where: { id: params.id },
-      select: { name: true },
-    })
-    if (!student) {
-      return NextResponse.json({ error: '学生不存在' }, { status: 404 })
-    }
-    return NextResponse.json({ hint: `请输入${student.name}姓名全拼或管理员代码` })
-  } catch {
-    return NextResponse.json({ hint: '请输入访问代码' })
-  }
-}
-
-// 避免 lint 未使用告警
-void getStudentCode

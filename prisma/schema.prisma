@@ -14,6 +14,7 @@ model Student {
   avatarUrl   String?
   bio         String?
   atcoderId   String?  // AtCoder 账号，用于自动抓取 ABC 比赛成绩
+  accessCode  String?  // 学生详情页访问代码（默认姓名全拼，创建学生时自动生成）
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

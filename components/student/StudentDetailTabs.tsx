@@ -30,7 +30,7 @@ export function StudentDetailTabs({ student, allPoints }: StudentDetailTabsProps
   const timelineItems = getTimelineItems(student)
 
   return (
-    <AccessGate studentName={student.name}>
+    <AccessGate studentId={student.id} studentName={student.name}>
       <div className="min-h-screen bg-background pb-nav">
         <div className="container mx-auto max-w-5xl px-4 py-6">
           <div className="mb-6">
