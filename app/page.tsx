@@ -105,6 +105,12 @@ async function getHomeData() {
 export default async function HomePage() {
   const { studentCount, contestCount, knowledgeCount, taskCount, announcements, schedules, links } = await getHomeData()
 
+  // 从训练安排数据自动推断集训日历月份（day 格式: "M.D"），避免硬编码导致日历过期
+  const firstDay = schedules[0]?.day ?? ''
+  const dayMatch = firstDay.match(/^(\d+)\./)
+  const calendarMonth = dayMatch ? parseInt(dayMatch[1], 10) : new Date().getMonth() + 1
+  const calendarYear = new Date().getFullYear()
+
   const statItems = [
     { icon: '👥', label: '学生人数', value: studentCount, href: '/students' },
     { icon: '🏆', label: '比赛场数', value: contestCount, href: '/contests' },
@@ -184,7 +190,7 @@ export default async function HomePage() {
         {/* Schedule */}
         <section className="mt-6">
           <h2 className="text-lg font-bold text-foreground mb-3">📅 训练安排</h2>
-          <TrainingCalendar schedules={schedules} month={8} year={2026} />
+          <TrainingCalendar schedules={schedules} month={calendarMonth} year={calendarYear} />
         </section>
 
         {/* Links */}
