@@ -162,7 +162,7 @@ async function main() {
   }
 
   const targetContests = CONTEST_ONLY
-    ? [...participations.keys()]
+    ? (participations.has(CONTEST_ONLY) ? [CONTEST_ONLY] : [])
     : contestIds.filter(cid => participations.has(cid));
 
   if (targetContests.length === 0) {
