@@ -6,28 +6,39 @@ import { Timeline } from '@/components/student/Timeline'
 import { StudentStats } from '@/components/student/StudentStats'
 import { KnowledgeGrid } from '@/components/student/KnowledgeGrid'
 import { TaskList } from '@/components/student/TaskList'
+import { AccessGate } from '@/components/student/AccessGate'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Trophy, BookOpen, ListChecks, Clock } from 'lucide-react'
 import Link from 'next/link'
 import { getTimelineItems } from '@/lib/student-data'
 
-interface StudentDetailTabsProps {
-  student: StudentProfile
+interface KnowledgePointLite {
+  id: string
+  name: string
+  level: number
+  levelAlias: string
+  category: string
 }
 
-export function StudentDetailTabs({ student }: StudentDetailTabsProps) {
+interface StudentDetailTabsProps {
+  student: StudentProfile
+  allPoints: KnowledgePointLite[]
+}
+
+export function StudentDetailTabs({ student, allPoints }: StudentDetailTabsProps) {
   const timelineItems = getTimelineItems(student)
 
   return (
-    <div className="min-h-screen bg-background pb-nav">
-      <div className="container mx-auto max-w-5xl px-4 py-6">
-        <div className="mb-6">
-          <Link href="/students/">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              返回学生列表
-            </Button>
+    <AccessGate studentName={student.name}>
+      <div className="min-h-screen bg-background pb-nav">
+        <div className="container mx-auto max-w-5xl px-4 py-6">
+          <div className="mb-6">
+            <Link href="/students/">
+              <Button variant="ghost" size="sm" className="gap-2">
+                <ArrowLeft className="h-4 w-4" />
+                返回学生列表
+              </Button>
           </Link>
         </div>
 
@@ -165,7 +176,12 @@ export function StudentDetailTabs({ student }: StudentDetailTabsProps) {
           </TabsContent>
 
           <TabsContent value="knowledge" className="mt-6">
-            <KnowledgeGrid knowledges={student.knowledges} />
+            <KnowledgeGrid
+              studentId={student.id}
+              studentName={student.name}
+              knowledges={student.knowledges}
+              allPoints={allPoints}
+            />
           </TabsContent>
 
           <TabsContent value="tasks" className="mt-6">
@@ -173,6 +189,7 @@ export function StudentDetailTabs({ student }: StudentDetailTabsProps) {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+      </div>
+    </AccessGate>
   )
 }

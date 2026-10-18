@@ -120,5 +120,16 @@ export default async function StudentDetailPage({ params }: PageProps) {
     notFound()
   }
 
-  return <StudentDetailTabs student={student} />
+  // 查询全部知识点（供知识点栏目自助掌握使用）
+  let allPoints: { id: string; name: string; level: number; levelAlias: string; category: string }[] = []
+  try {
+    allPoints = await prisma.knowledgePoint.findMany({
+      select: { id: true, name: true, level: true, levelAlias: true, category: true },
+      orderBy: [{ level: 'asc' }, { name: 'asc' }],
+    })
+  } catch {
+    allPoints = []
+  }
+
+  return <StudentDetailTabs student={student} allPoints={allPoints} />
 }
