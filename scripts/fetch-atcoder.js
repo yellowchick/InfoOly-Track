@@ -232,7 +232,7 @@ async function main() {
         continue;
       }
 
-      const existing = contest.id ? await prisma.studentContestResult.findFirst({
+      const existing = contest ? await prisma.studentContestResult.findFirst({
         where: { studentId: p.student.id, contestId: contest.id },
       }) : null;
 
