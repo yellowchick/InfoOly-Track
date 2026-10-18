@@ -19,7 +19,8 @@ const prisma = new PrismaClient();
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
 const UPDATE = args.includes('--update');
-const BACK = parseInt((args[args.indexOf('--back') + 1]) || '8', 10);
+const backIdx = args.indexOf('--back');
+const BACK = backIdx !== -1 ? (parseInt(args[backIdx + 1], 10) || 8) : 8;
 const CONTEST_ONLY = args.includes('--contest') ? args[args.indexOf('--contest') + 1].toLowerCase() : null;
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
