@@ -194,7 +194,36 @@ async function main() {
     const byHandle = new Map();
     for (const r of standings) byHandle.set(r.UserScreenName.toLowerCase(), r);
 
-    // 查找或创建比赛记录
+    // 第一遍：计算所有学生的窗口内有效成绩，收集待录入列表
+    // （先判定有没有人正式参赛，有才创建比赛记录，避免产生空比赛）
+    const endMs = endTime ? endTime.getTime() : Infinity;
+    const pending = [];
+    for (const [, p] of results) {
+      // 按比赛时间窗口过滤提交：赛后练习/虚拟参赛的提交不计入成绩
+      const validAC = new Map();
+      for (const sub of p.acSubs) {
+        if (sub.epoch_second * 1000 > endMs) continue;
+        validAC.set(sub.problem_id, Math.max(validAC.get(sub.problem_id) || 0, sub.point));
+      }
+      const score = Math.round([...validAC.values()].reduce((a, b) => a + b, 0));
+      const acCount = validAC.size;
+      const official = byHandle.get(p.student.atcoderId.toLowerCase());
+
+      // 窗口内无有效AC 且 官网无比赛记录 → 说明是赛后练习/虚拟参赛，未正式参赛，跳过
+      if (acCount === 0 && !official) {
+        console.log(`  ⏭️ ${p.student.name}: 仅赛后练习提交，未正式参赛，跳过`);
+        continue;
+      }
+      pending.push({ p, score, acCount, official });
+    }
+
+    if (pending.length === 0) {
+      console.log('  📭 无学生正式参赛，不创建比赛记录');
+      await sleep(2000);
+      continue;
+    }
+
+    // 有学生正式参赛，才查找/创建比赛记录
     const contestName = `AtCoder ABC${cid.replace('abc', '')}`;
     let contest = await prisma.contest.findFirst({ where: { name: contestName, date: month || '' } });
     if (!contest && !DRY_RUN) {
@@ -209,28 +238,12 @@ async function main() {
     }
     const contestId = contest ? contest.id : '(dry-run)';
 
-    for (const [, p] of results) {
-      // 按比赛时间窗口过滤提交：赛后练习/虚拟参赛的提交不计入成绩
-      const endMs = endTime ? endTime.getTime() : Infinity;
-      const validAC = new Map();
-      for (const sub of p.acSubs) {
-        if (sub.epoch_second * 1000 > endMs) continue;
-        validAC.set(sub.problem_id, Math.max(validAC.get(sub.problem_id) || 0, sub.point));
-      }
-      const score = Math.round([...validAC.values()].reduce((a, b) => a + b, 0));
-      const acCount = validAC.size;
-
-      const official = byHandle.get(p.student.atcoderId.toLowerCase());
+    // 第二遍：录入待录入列表
+    for (const { p, score, acCount, official } of pending) {
       const rank = official ? official.Place : null;
       const atcoderRank = official ? official.AtCoderRank : null;
       const rating = official ? official.NewRating : null;
       const isRated = official ? official.IsRated : null;
-
-      // 窗口内无有效AC 且 官网无比赛记录 → 说明是赛后练习/虚拟参赛，未正式参赛，跳过
-      if (acCount === 0 && !official) {
-        console.log(`  ⏭️ ${p.student.name}: 仅赛后练习提交，未正式参赛，跳过`);
-        continue;
-      }
 
       const existing = contest ? await prisma.studentContestResult.findFirst({
         where: { studentId: p.student.id, contestId: contest.id },
