@@ -167,6 +167,8 @@ tail -50 /var/log/atcoder-fetch.log
 | 马天成 | Tiancheng | 2026-10-18 |
 | 党皓天 | solitaire | 2026-10-18 |
 | 陆臻 | Remielle | 2026-10-18 |
+| 梁芮棠 | soft_sweet505 | 2026-10-18 |
+| 张赫桐 | zhanghetong | 2026-10-18 |
 
 新学生绑定后请追加到此表。
 
