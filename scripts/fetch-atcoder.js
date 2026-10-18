@@ -226,6 +226,12 @@ async function main() {
       const rating = official ? official.NewRating : null;
       const isRated = official ? official.IsRated : null;
 
+      // 窗口内无有效AC 且 官网无比赛记录 → 说明是赛后练习/虚拟参赛，未正式参赛，跳过
+      if (acCount === 0 && !official) {
+        console.log(`  ⏭️ ${p.student.name}: 仅赛后练习提交，未正式参赛，跳过`);
+        continue;
+      }
+
       const existing = contest.id ? await prisma.studentContestResult.findFirst({
         where: { studentId: p.student.id, contestId: contest.id },
       }) : null;
