@@ -13,6 +13,7 @@ model Student {
   displayName String
   avatarUrl   String?
   bio         String?
+  atcoderId   String?  // AtCoder 账号，用于自动抓取 ABC 比赛成绩
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
