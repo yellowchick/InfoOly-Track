@@ -6,10 +6,13 @@ import { Trophy, BookOpen, CheckCircle } from 'lucide-react'
 
 interface StudentStatsProps {
   student: StudentProfile
+  /** 实时已掌握知识点数（点选联动）；不传则使用静态数据 */
+  knowledgeCount?: number
 }
 
-export function StudentStats({ student }: StudentStatsProps) {
+export function StudentStats({ student, knowledgeCount }: StudentStatsProps) {
   const stats = getStudentStats(student)
+  const displayKnowledgeCount = knowledgeCount ?? stats.knowledgeCount
 
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -36,9 +39,9 @@ export function StudentStats({ student }: StudentStatsProps) {
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-50 text-green-600">
               <BookOpen className="h-5 w-5" />
             </div>
-            <p className="text-2xl font-bold">{stats.knowledgeCount}</p>
+            <p className="text-2xl font-bold">{displayKnowledgeCount}</p>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">已认证知识点</p>
+          <p className="text-sm text-muted-foreground mt-1">已掌握知识点</p>
         </CardContent>
       </Card>
 

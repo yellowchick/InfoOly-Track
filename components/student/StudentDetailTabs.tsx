@@ -60,7 +60,7 @@ export function StudentDetailTabs({ student, allPoints }: StudentDetailTabsProps
         </div>
 
         <div className="mb-8">
-          <StudentStats student={student} />
+          <StudentStats student={student} knowledgeCount={certifiedIds.size} />
         </div>
 
         <Tabs defaultValue="overview" className="w-full">
