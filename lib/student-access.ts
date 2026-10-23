@@ -54,14 +54,24 @@ export function verifyAccessCode(code: string, studentName: string): 'admin' | '
 /** localStorage 键 */
 export const ACCESS_STORAGE_KEY = 'student_detail_access'
 
+/** 身份变化时派发的事件（供知识点栏目等刷新操作权限） */
+export const ACCESS_CHANGED_EVENT = 'student-access-changed'
+
 export interface AccessState {
-  role: 'admin' | 'student'
+  role: 'admin' | 'student' | 'guest'
   code: string
+}
+
+function notifyAccessChanged() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(ACCESS_CHANGED_EVENT))
+  }
 }
 
 export function saveAccess(state: AccessState): void {
   if (typeof window === 'undefined') return
   localStorage.setItem(ACCESS_STORAGE_KEY, JSON.stringify(state))
+  notifyAccessChanged()
 }
 
 export function loadAccess(): AccessState | null {
@@ -70,7 +80,7 @@ export function loadAccess(): AccessState | null {
     const raw = localStorage.getItem(ACCESS_STORAGE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw)
-    if (parsed && (parsed.role === 'admin' || parsed.role === 'student') && typeof parsed.code === 'string') {
+    if (parsed && (parsed.role === 'admin' || parsed.role === 'student' || parsed.role === 'guest') && typeof parsed.code === 'string') {
       return parsed
     }
     return null
@@ -82,4 +92,5 @@ export function loadAccess(): AccessState | null {
 export function clearAccess(): void {
   if (typeof window === 'undefined') return
   localStorage.removeItem(ACCESS_STORAGE_KEY)
+  notifyAccessChanged()
 }

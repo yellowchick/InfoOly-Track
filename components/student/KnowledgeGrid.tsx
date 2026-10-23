@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { levelColor, levelLabel } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Check, Loader2 } from 'lucide-react'
-import { loadAccess } from '@/lib/student-access'
+import { loadAccess, ACCESS_CHANGED_EVENT } from '@/lib/student-access'
 
 interface KnowledgePointLite {
   id: string
@@ -27,6 +27,18 @@ interface KnowledgeGridProps {
 export function KnowledgeGrid({ studentId, studentName, allPoints, certifiedIds, setCertifiedIds }: KnowledgeGridProps) {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState('')
+  // 仅学生本人（或管理员）可点选；游客仅可查看
+  const [canEdit, setCanEdit] = useState(false)
+
+  useEffect(() => {
+    const check = () => {
+      const access = loadAccess()
+      setCanEdit(access?.role === 'admin' || access?.role === 'student')
+    }
+    check()
+    window.addEventListener(ACCESS_CHANGED_EVENT, check)
+    return () => window.removeEventListener(ACCESS_CHANGED_EVENT, check)
+  }, [])
 
   const grouped = allPoints.reduce((acc, kp) => {
     if (!acc[kp.level]) acc[kp.level] = []
@@ -40,6 +52,10 @@ export function KnowledgeGrid({ studentId, studentName, allPoints, certifiedIds,
 
   const toggle = async (kp: KnowledgePointLite) => {
     if (busyId) return
+    if (!canEdit) {
+      setError('游客身份仅可查看，请输入访问代码后再进行点选')
+      return
+    }
     const access = loadAccess()
     if (!access) {
       setError('访问代码已失效，请刷新页面重新输入')
@@ -106,7 +122,9 @@ export function KnowledgeGrid({ studentId, studentName, allPoints, certifiedIds,
             />
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            点击知识点即可标记掌握（再次点击取消）。数据实时保存到数据库。
+            {canEdit
+              ? '点击知识点即可标记掌握（再次点击取消）。数据实时保存到数据库。'
+              : '当前为游客身份，仅可查看；输入访问代码后可点选标记。'}
           </p>
           {error && <p className="mt-2 text-xs text-red-500">{error}</p>}
         </CardContent>
@@ -143,16 +161,17 @@ export function KnowledgeGrid({ studentId, studentName, allPoints, certifiedIds,
                       key={kp.id}
                       type="button"
                       onClick={() => toggle(kp)}
-                      disabled={busyId !== null}
+                      disabled={busyId !== null || !canEdit}
                       className={
                         'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-all ' +
                         (isCertified
                           ? 'bg-green-50 text-green-700 border-green-300 hover:bg-green-100 font-medium'
                           : 'bg-background text-muted-foreground border-border hover:bg-muted hover:text-foreground') +
                         (isBusy ? ' opacity-60' : '') +
-                        (busyId !== null && !isBusy ? ' opacity-70' : '')
+                        (busyId !== null && !isBusy ? ' opacity-70' : '') +
+                        (!canEdit ? ' cursor-not-allowed opacity-80' : '')
                       }
-                      title={isCertified ? '点击标记为未掌握' : '点击标记为已掌握'}
+                      title={!canEdit ? '游客身份仅可查看' : isCertified ? '点击标记为未掌握' : '点击标记为已掌握'}
                     >
                       {isBusy ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />

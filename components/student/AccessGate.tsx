@@ -47,7 +47,12 @@ export function AccessGate({ studentId, studentName, children }: AccessGateProps
       setChecked(true)
       return
     }
-    // 校验已保存的代码对当前学生仍有效（以服务端为准）
+    // 游客身份直接通过；其他身份需服务端校验
+    if (saved.role === 'guest') {
+      setAccess(saved)
+      setChecked(true)
+      return
+    }
     verifyCode(studentId, saved.code).then((role) => {
       if (role) {
         setAccess({ role, code: saved.code })
@@ -77,11 +82,19 @@ export function AccessGate({ studentId, studentName, children }: AccessGateProps
             title="切换访问身份"
           >
             <Lock className="h-3 w-3" />
-            {access.role === 'admin' ? '管理员' : studentName}
+            {access.role === 'admin' ? '管理员' : access.role === 'guest' ? '游客' : studentName}
           </button>
         </div>
       </>
     )
+  }
+
+  const handleGuest = () => {
+    const state: AccessState = { role: 'guest', code: '' }
+    saveAccess(state)
+    setAccess(state)
+    setSwitching(false)
+    setError('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,6 +161,11 @@ export function AccessGate({ studentId, studentName, children }: AccessGateProps
             {switching && (
               <Button type="button" variant="ghost" className="w-full" onClick={() => { setSwitching(false); setError('') }}>
                 取消
+              </Button>
+            )}
+            {!switching && (
+              <Button type="button" variant="outline" className="w-full" onClick={handleGuest}>
+                以游客身份进入（仅可查看）
               </Button>
             )}
           </form>
