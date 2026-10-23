@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { StudentKnowledge } from '@/types'
 import { levelColor, levelLabel } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,15 +18,13 @@ interface KnowledgePointLite {
 interface KnowledgeGridProps {
   studentId: string
   studentName: string
-  knowledges: (StudentKnowledge & { knowledgePoint?: KnowledgePointLite })[]
   allPoints: KnowledgePointLite[]
+  /** 已掌握知识点 id 集合（与概览页共享的实时状态，由父组件管理） */
+  certifiedIds: Set<string>
+  setCertifiedIds: React.Dispatch<React.SetStateAction<Set<string>>>
 }
 
-export function KnowledgeGrid({ studentId, studentName, knowledges, allPoints }: KnowledgeGridProps) {
-  // 已掌握的知识点 id 集合（本地状态，乐观更新）
-  const [certifiedIds, setCertifiedIds] = useState<Set<string>>(
-    () => new Set(knowledges.map(sk => sk.knowledgePointId))
-  )
+export function KnowledgeGrid({ studentId, studentName, allPoints, certifiedIds, setCertifiedIds }: KnowledgeGridProps) {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState('')
 
@@ -52,16 +49,17 @@ export function KnowledgeGrid({ studentId, studentName, knowledges, allPoints }:
     const isCertified = certifiedIds.has(kp.id)
     const action = isCertified ? 'uncertify' : 'certify'
 
-    // 乐观更新
+    // 乐观更新（不可变方式更新共享状态）
     setBusyId(kp.id)
     setError('')
     const prev = new Set(certifiedIds)
+    const next = new Set(certifiedIds)
     if (isCertified) {
-      certifiedIds.delete(kp.id)
+      next.delete(kp.id)
     } else {
-      certifiedIds.add(kp.id)
+      next.add(kp.id)
     }
-    setCertifiedIds(new Set(certifiedIds))
+    setCertifiedIds(next)
 
     try {
       const res = await fetch(`/api/students/${studentId}/knowledge`, {

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { StudentProfile } from '@/types'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Timeline } from '@/components/student/Timeline'
@@ -28,6 +29,12 @@ interface StudentDetailTabsProps {
 
 export function StudentDetailTabs({ student, allPoints }: StudentDetailTabsProps) {
   const timelineItems = getTimelineItems(student)
+
+  // 已掌握知识点 id 集合：概览「已掌握知识点」与知识点栏目共享同一份实时状态
+  const [certifiedIds, setCertifiedIds] = useState<Set<string>>(
+    () => new Set(student.knowledges.map(sk => sk.knowledgePointId))
+  )
+  const masteredPoints = allPoints.filter(kp => certifiedIds.has(kp.id))
 
   return (
     <AccessGate studentId={student.id} studentName={student.name}>
@@ -105,21 +112,26 @@ export function StudentDetailTabs({ student, allPoints }: StudentDetailTabsProps
               </div>
 
               <div>
-                <h2 className="text-lg font-semibold mb-4">最新认证</h2>
-                <div className="space-y-2">
-                  {student.knowledges.slice(0, 3).map(sk => (
-                    <div key={sk.id} className="flex items-center justify-between rounded-lg border p-3">
+                <h2 className="text-lg font-semibold mb-4">
+                  已掌握知识点
+                  {masteredPoints.length > 0 && (
+                    <span className="ml-2 text-sm font-normal text-green-600">{masteredPoints.length} 个</span>
+                  )}
+                </h2>
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                  {masteredPoints.map(kp => (
+                    <div key={kp.id} className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50/50 p-3">
                       <div>
-                        <p className="font-medium text-sm">{sk.knowledgePoint?.name}</p>
-                        <p className="text-xs text-muted-foreground">{sk.knowledgePoint?.category}</p>
+                        <p className="font-medium text-sm">{kp.name}</p>
+                        <p className="text-xs text-muted-foreground">{kp.category}</p>
                       </div>
                       <span className="text-sm font-semibold text-green-600">
-                        {sk.knowledgePoint?.levelAlias}
+                        {kp.levelAlias}
                       </span>
                     </div>
                   ))}
-                  {student.knowledges.length === 0 && (
-                    <p className="text-sm text-muted-foreground">暂无知识点认证</p>
+                  {masteredPoints.length === 0 && (
+                    <p className="text-sm text-muted-foreground">暂无已掌握知识点，可到「知识点」栏目点击标记</p>
                   )}
                 </div>
               </div>
@@ -179,8 +191,9 @@ export function StudentDetailTabs({ student, allPoints }: StudentDetailTabsProps
             <KnowledgeGrid
               studentId={student.id}
               studentName={student.name}
-              knowledges={student.knowledges}
               allPoints={allPoints}
+              certifiedIds={certifiedIds}
+              setCertifiedIds={setCertifiedIds}
             />
           </TabsContent>
 
